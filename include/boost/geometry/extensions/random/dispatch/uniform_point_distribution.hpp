@@ -34,7 +34,11 @@ namespace boost { namespace geometry { namespace random { namespace dispatch
                 single_tag,
                 multi_tag
             >::type,
-        typename CSTag = typename cs_tag<Point>::type,
+        typename CSTag = typename tag_cast
+            <
+                typename cs_tag<Point>::type,
+                spherical_tag
+            >::type,
         std::size_t dimension = dimension<Point>::type::value>
     class uniform_point_distribution : public detail::uniform_point_distribution<Point, DomainGeometry, DomainTag,
         MultiOrSingle,

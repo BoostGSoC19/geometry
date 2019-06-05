@@ -141,6 +141,84 @@ namespace boost { namespace geometry { namespace random { namespace detail
         }
     };
 
+    template<typename Point, typename DomainGeometry, typename Generator>
+    Point sample_spherical_box_2d(DomainGeometry const& b, Generator& gen)
+    {
+        typedef typename coordinate_type<Point>::type coordinate_type;
+        typedef typename select_most_precise
+        <
+            coordinate_type,
+            double
+        >::type computation_type;
+
+        Point out;
+        std::uniform_real_distribution<computation_type> lon_dist(                      
+            get_as_radian<0, 0>(b),
+            get_as_radian<1, 0>(b));
+        set_from_radian<0>(out, lon_dist(gen));                 
+    
+        coordinate_type lat1 = get_as_radian<0, 1>(b);
+        coordinate_type lat2 = get_as_radian<1, 1>(b);
+        coordinate_type x1 = (1.0 - std::cos(lat1))/2,
+                        x2 = (1.0 - std::cos(lat2))/2;
+        std::uniform_real_distribution<computation_type> x_dist(   
+            std::min(x1, x2),
+            std::max(x1, x2));
+        coordinate_type x = x_dist(gen);
+        set_from_radian<1>(out, std::acos(1.0 - 2.0 * x));
+        return out;
+    }
+
+    template<typename Point, typename DomainGeometry>
+    class uniform_point_distribution<Point, DomainGeometry, box_tag, single_tag, spherical_tag, 2>
+        : public uniform_point_distribution_base<Point, DomainGeometry>
+    {
+        typedef uniform_point_distribution_base<Point, DomainGeometry> base;
+    public:
+        using base::base;
+        template<typename Generator>
+        Point operator()(Generator& gen, typename base::param_type const& p)
+        {
+            return sample_spherical_box_2d<Point>(p.domain(), gen);
+        }
+        template<typename Generator>
+        Point operator()(Generator& gen)
+        {
+            return (*this)(gen, this->_param);
+        } 
+    };
+    
+    template<typename Point, typename DomainGeometry>     
+    class uniform_point_distribution<Point, DomainGeometry, box_tag, single_tag, spherical_tag, 3>
+        : public uniform_point_distribution_base<Point, DomainGeometry>
+    {    
+        typedef uniform_point_distribution_base<Point, DomainGeometry> base;
+    public:
+        using base::base;
+        template<typename Generator>
+        Point operator()(Generator& gen, typename base::param_type const& p)
+        {
+            typedef typename coordinate_type<Point>::type coordinate_type;
+            typedef typename select_most_precise
+                <
+                    coordinate_type,
+                    double
+                >::type computation_type;
+
+            Point out = sample_spherical_box_2d<Point>(p.domain(), gen);
+            coordinate_type r1 = get<0, 2>(p.domain());
+            coordinate_type r2 = get<1, 2>(p.domain());
+            std::uniform_real_distribution<computation_type> r_dist(r1*r1*r1, r2*r2*r2);
+            set<2>(out, std::cbrt(r_dist(gen)));
+            return out;
+        }
+        template<typename Generator>
+        Point operator()(Generator& gen)
+        {
+            return (*this)(gen, this->_param);
+        } 
+    };
+
     template<typename Point, typename DomainGeometry, std::size_t dimension>
     class uniform_point_distribution<Point, DomainGeometry, box_tag, single_tag, cartesian_tag, dimension> 
         : public uniform_point_distribution_base<Point, DomainGeometry>
@@ -164,16 +242,50 @@ namespace boost { namespace geometry { namespace random { namespace detail
         }
     };
 
+    template<typename Point, typename CSTag, std::size_t dimension, typename PointIn, typename LengthType>
+    struct sample_segment;
+    
+    template<typename Point, std::size_t dimension, typename PointIn, typename LengthType>
+    struct sample_segment<Point, cartesian_tag, dimension, PointIn, LengthType>{
+        static Point apply(PointIn const& p1, PointIn const& p2, LengthType const& r)
+        {
+            Point out;
+            assign(out,p2);
+            subtract_point(out, p1);
+            multiply_value(out, r);
+            add_point(out, p1);
+            return out;
+        }
+    };
+
     template<typename Point, typename PointIn, typename LengthType>
-    Point sample_segment(PointIn const& p1, PointIn const& p2, LengthType const& r)
-    {
+    Point sample_segment_spherical_2d(PointIn const& p1, PointIn const& p2, LengthType const& f)  
+    {   
         Point out;
-        assign(out,p2);
-        subtract_point(out, p1);
-        multiply_value(out, r);
-        add_point(out, p1);
+        const auto lat1 = get_as_radian<1>(p1); 
+        const auto lon1 = get_as_radian<0>(p1);
+        const auto lat2 = get_as_radian<1>(p2);
+        const auto lon2 = get_as_radian<0>(p2);
+        LengthType const d = distance(p1, p2);
+        LengthType const A = std::sin((1-f)*d)/std::sin(d);
+        LengthType const B = std::sin(f*d)/std::sin(d);
+        LengthType const x = A*std::cos(lat1)*std::cos(lon1) +  B*std::cos(lat2)*std::cos(lon2);
+        LengthType const y = A*std::cos(lat1)*std::sin(lon1) +  B*std::cos(lat2)*std::sin(lon2);
+        LengthType const z = A*std::sin(lat1) + B*std::sin(lat2);
+        LengthType const lat = std::atan2(z,std::sqrt(x*x+y*y));
+        LengthType const lon = std::atan2(y,x);
+        set_from_radian<1>(out, lat);
+        set_from_radian<0>(out, lon);
         return out;
     }
+
+    template<typename Point, typename PointIn, typename LengthType>
+    struct sample_segment<Point, spherical_tag, 2, PointIn, LengthType>{
+        static Point apply(PointIn const& p1, PointIn const& p2, LengthType const& f)
+        {
+            return sample_segment_spherical_2d<Point>(p1, p2, f);
+        }
+    };
 
     template<typename Point, typename PointVec, typename IndexVec, typename LengthVec, typename LengthType>
     Point sample_multi_line(PointVec const& point_cache, IndexVec const& skip_list, LengthVec const& accumulated_lengths, LengthType const& r)
@@ -182,8 +294,9 @@ namespace boost { namespace geometry { namespace random { namespace detail
             std::lower_bound(accumulated_lengths.begin(), accumulated_lengths.end(), r));
         std::size_t offset = std::distance(skip_list.begin(),
             std::lower_bound(skip_list.begin(), skip_list.end(), i));
-        return sample_segment<Point>(point_cache[i+offset-1], point_cache[i+offset],
-            (r-accumulated_lengths[i-1])/(accumulated_lengths[i]-accumulated_lengths[i-1]));
+        return sample_segment<Point, typename tag_cast < typename cs_tag<Point>::type, spherical_tag >::type, dimension<Point>::type::value, decltype(point_cache[i+offset-1]), decltype((r-accumulated_lengths[i-1])/(accumulated_lengths[i]-accumulated_lengths[i-1]))>::apply
+            (point_cache[i+offset-1], point_cache[i+offset],
+                (r-accumulated_lengths[i-1])/(accumulated_lengths[i]-accumulated_lengths[i-1]));
     }
 
     template<typename Point, typename DomainGeometry, typename SingleOrMulti, typename CSTag, std::size_t dimension>
@@ -224,8 +337,8 @@ namespace boost { namespace geometry { namespace random { namespace detail
         model::box<Point> _cached_box;
     };
 
-    template<typename Point, typename DomainGeometry, typename SingleOrMulti, std::size_t dimension>
-    class uniform_point_distribution<Point, DomainGeometry, linear_tag, SingleOrMulti, cartesian_tag, dimension>
+    template<typename Point, typename DomainGeometry, typename SingleOrMulti, typename CSTag, std::size_t dimension>
+    class uniform_point_distribution<Point, DomainGeometry, linear_tag, SingleOrMulti, CSTag, dimension>
         : public uniform_point_distribution_base<Point, DomainGeometry>
     {
         typedef uniform_point_distribution_base<Point, DomainGeometry> base;
@@ -287,13 +400,13 @@ namespace boost { namespace geometry { namespace random { namespace detail
         std::vector<length_type> accumulated_lengths;
     };
 
-    template<typename Point, typename DomainGeometry, typename SingleOrMulti, std::size_t dimension>
-    class uniform_point_distribution<Point, DomainGeometry, segment_tag, SingleOrMulti, cartesian_tag, dimension>
+    template<typename Point, typename DomainGeometry, typename SingleOrMulti, typename CSTag, std::size_t dimension>
+    class uniform_point_distribution<Point, DomainGeometry, segment_tag, SingleOrMulti, CSTag, dimension>
         : public uniform_point_distribution_base<Point, DomainGeometry>
     {
         typedef uniform_point_distribution_base<Point, DomainGeometry> base;
         typedef uniform_point_distribution<Point, segment_view<DomainGeometry>,
-            linear_tag, SingleOrMulti, cartesian_tag, dimension> delegate_dist;
+            linear_tag, SingleOrMulti, CSTag, dimension> delegate_dist;
     public:
         using base::base;
         using base::param;
