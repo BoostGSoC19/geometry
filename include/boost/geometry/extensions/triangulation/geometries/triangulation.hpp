@@ -204,7 +204,7 @@ public:
         m_faces.reserve(2 * m_vertices.size() - 5);
     }
 
-    Point& face_vertex(face_index f, face_vertex_index v)
+    Point const& face_vertex(face_index f, face_vertex_index v)
     {
         return m_faces[f].m_v[v]->m_p;
     }
@@ -261,13 +261,16 @@ public:
         if(m_faces[fi].m_v[0] == std::begin(m_vertices)+v) vi = 0;
         else if(m_faces[fi].m_v[1] == std::begin(m_vertices)+v) vi = 1;
         else vi = 2;
-        if(m_faces.size()==1) return vi == 2 ? std::distance(std::begin(m_vertices),m_faces[fi].m_v[0]) : std::distance(std::begin(m_vertices),m_faces[fi].m_v[vi+1]);
+        if(m_faces.size()==1) 
+            return vi == 2 ? 
+                std::distance<typename vertex_container::const_iterator>(m_vertices.begin(),m_faces[fi].m_v[0]) : 
+                std::distance<typename vertex_container::const_iterator>(m_vertices.begin(),m_faces[fi].m_v[vi+1]);
         edge_index e = prev(edge_index{fi, vi});
         while( opposite(e).m_f != invalid )
         {
             e = next(opposite(e));
         }
-        return std::distance(std::begin(m_vertices),m_faces[e.m_f].m_v[ e.m_v == 0 ? 2 : e.m_v - 1 ]);
+        return std::distance<typename vertex_container::const_iterator>(std::begin(m_vertices),m_faces[e.m_f].m_v[ e.m_v == 0 ? 2 : e.m_v - 1 ]);
     }
 
     vertex_index boundary_prev(vertex_index const& v) const
@@ -277,13 +280,13 @@ public:
         if(m_faces[fi].m_v[0] == std::begin(m_vertices) + v) vi = 0;
         else if(m_faces[fi].m_v[1] == std::begin(m_vertices) + v) vi = 1;
         else vi = 2;
-        if(m_faces.size()==1) return vi == 0 ? std::distance(std::begin(m_vertices), m_faces[fi].m_v[2]) : std::distance(std::begin(m_vertices),m_faces[fi].m_v[vi-1]) ;
+        if(m_faces.size()==1) return vi == 0 ? std::distance<typename vertex_container::const_iterator>(std::begin(m_vertices), m_faces[fi].m_v[2]) : std::distance<typename vertex_container::const_iterator>(std::begin(m_vertices),m_faces[fi].m_v[vi-1]) ;
         edge_index e = next(edge_index{fi, vi});
         while( opposite(e).m_f != invalid )
         {
             e = prev(opposite(e));
         }
-        return std::distance(std::begin(m_vertices),m_faces[e.m_f].m_v[ e.m_v == 2 ? 0 : e.m_v + 1 ]);
+        return std::distance<typename vertex_container::const_iterator>(std::begin(m_vertices),m_faces[e.m_f].m_v[ e.m_v == 2 ? 0 : e.m_v + 1 ]);
     }
 
     void clear()
