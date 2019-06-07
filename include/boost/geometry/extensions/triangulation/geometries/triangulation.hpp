@@ -99,9 +99,9 @@ public:
     typedef std::size_t face_index;
     typedef std::size_t vertex_index;
     typedef unsigned short face_vertex_index;
-	struct edge_index
+	struct halfedge_index
 	{
-        edge_index(face_index f, face_vertex_index v):m_f(f), m_v(v) {}
+        halfedge_index(face_index f, face_vertex_index v):m_f(f), m_v(v) {}
 		face_index m_f;
 		face_vertex_index m_v;
 	};
@@ -209,7 +209,7 @@ public:
         return m_faces[f].m_v[v]->m_p;
     }
 
-    segment_type face_segment(edge_index e)
+    segment_type face_segment(halfedge_index e)
     {
         return segment_type(face_vertex(e.m_f, (e.m_v == 2 ? 0 : e.m_v +1)), face_vertex(e.m_f, (e.m_v == 0 ? 2 : e.m_v - 1)) );
     }
@@ -229,19 +229,19 @@ public:
         return m_faces[f].m_o[v];
     }
 
-    edge_index opposite(edge_index const& e) const
+    halfedge_index opposite(halfedge_index const& e) const
     {
-        return edge_index{ m_faces[e.m_f].m_f[e.m_v], m_faces[e.m_f].m_o[e.m_v] };
+        return halfedge_index{ m_faces[e.m_f].m_f[e.m_v], m_faces[e.m_f].m_o[e.m_v] };
     }
 
-    edge_index next(edge_index const& e) const
+    halfedge_index next(halfedge_index const& e) const
     {
-        return edge_index{ e.m_f, static_cast<unsigned short>(e.m_v == 2 ? 0 : e.m_v + 1) };
+        return halfedge_index{ e.m_f, static_cast<unsigned short>(e.m_v == 2 ? 0 : e.m_v + 1) };
     }
 
-    edge_index prev(edge_index const& e) const
+    halfedge_index prev(halfedge_index const& e) const
     {
-        return edge_index{ e.m_f, static_cast<unsigned short>(e.m_v == 0 ? 2 : e.m_v - 1)};
+        return halfedge_index{ e.m_f, static_cast<unsigned short>(e.m_v == 0 ? 2 : e.m_v - 1)};
     }
 
     vertex_index boundary_vertex() const
@@ -265,7 +265,7 @@ public:
             return vi == 2 ? 
                 std::distance<typename vertex_container::const_iterator>(m_vertices.begin(),m_faces[fi].m_v[0]) : 
                 std::distance<typename vertex_container::const_iterator>(m_vertices.begin(),m_faces[fi].m_v[vi+1]);
-        edge_index e = prev(edge_index{fi, vi});
+        halfedge_index e = prev(halfedge_index{fi, vi});
         while( opposite(e).m_f != invalid )
         {
             e = next(opposite(e));
@@ -281,7 +281,7 @@ public:
         else if(m_faces[fi].m_v[1] == std::begin(m_vertices) + v) vi = 1;
         else vi = 2;
         if(m_faces.size()==1) return vi == 0 ? std::distance<typename vertex_container::const_iterator>(std::begin(m_vertices), m_faces[fi].m_v[2]) : std::distance<typename vertex_container::const_iterator>(std::begin(m_vertices),m_faces[fi].m_v[vi-1]) ;
-        edge_index e = next(edge_index{fi, vi});
+        halfedge_index e = next(halfedge_index{fi, vi});
         while( opposite(e).m_f != invalid )
         {
             e = prev(opposite(e));
@@ -305,7 +305,7 @@ public:
         return m_faces.size();
     }
 	
-    void flip(const edge_index& e)
+    void flip(const halfedge_index& e)
 	{
         std::size_t const& fi1 = e.m_f;
 		face_ref<Point>& f1 = m_faces[fi1];
@@ -337,7 +337,7 @@ public:
         f2.m_o[ v2 == 2 ? 0 : v2 + 1 ] = v1 == 2 ? 0 : v1 + 1;
 	}
 
-	face_index add_face_on_boundary(edge_index e, vertex_index v)
+	face_index add_face_on_boundary(halfedge_index e, vertex_index v)
 	{
         const auto f = e.m_f;
         const auto adj = e.m_v;
@@ -359,12 +359,12 @@ public:
 		return m_faces.size() - 1;
 	}
 
-    edge_index face_edge(face_index f, face_vertex_index v = 0) const
+    halfedge_index face_edge(face_index f, face_vertex_index v = 0) const
     {
-        return edge_index{f, v};
+        return halfedge_index{f, v};
     }
 
-    void connect(edge_index e1, edge_index e2)
+    void connect(halfedge_index e1, halfedge_index e2)
     {
         face_index const& f1 = e1.m_f;
         face_index const& f2 = e2.m_f;
@@ -464,7 +464,7 @@ private:
 template< typename Point >
 struct edge_ref
 {
-    typename triangulation<Point>::edge_index m_e;    
+    typename triangulation<Point>::halfedge_index m_e;    
     triangulation<Point>& m_t;
 };
 

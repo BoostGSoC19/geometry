@@ -124,16 +124,16 @@ void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool 
         auto e1 = out.face_edge(seed_face);
         auto e2 = out.next(e1);
         auto e3 = out.next(e2);
-        std::vector<std::pair<typename Triangulation::edge_index, ct>> convex_hull { 
+        std::vector<std::pair<typename Triangulation::halfedge_index, ct>> convex_hull { 
             std::make_pair(e1, ct(std::get<2>(points[1]))), 
             std::make_pair(e2, ct(std::get<2>(points[2]))), 
             std::make_pair(e3, ct(std::get<2>(points[0]))) };
-        typename std::vector<std::pair<typename Triangulation::edge_index, ct>>::iterator nfv, nlv, nfv2 = convex_hull.end(), nlv2 = convex_hull.end();
+        typename std::vector<std::pair<typename Triangulation::halfedge_index, ct>>::iterator nfv, nlv, nfv2 = convex_hull.end(), nlv2 = convex_hull.end();
         for(int i=3; i<points.size(); ++i)
         {
             auto new_vertex = out.add_vertex(std::get<0>(points[i]));
             auto const& p = out.vertex(new_vertex);
-            auto is_visible = [&out, &p](std::pair<typename Triangulation::edge_index, ct> const& bep)
+            auto is_visible = [&out, &p](std::pair<typename Triangulation::halfedge_index, ct> const& bep)
                     {
                         const auto& be = std::get<0>(bep);
                         const auto s = out.face_segment(be);
@@ -163,7 +163,7 @@ void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool 
                     if(ba < 0) ba += 2*PI;
                 }
                 auto pred = [&ref_angle, &PI]
-                    (std::pair<typename Triangulation::edge_index, ct> const& be, ct const& a)
+                    (std::pair<typename Triangulation::halfedge_index, ct> const& be, ct const& a)
                     {
                         auto ba = std::get<1>(be) - ref_angle;
                         if(ba < 0) ba += 2*PI;
@@ -175,13 +175,13 @@ void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool 
                 if( invis_edge == convex_hull.begin() ) invis_edge = convex_hull.end()-1; else --invis_edge;
 
                 auto vis_small = [&is_visible] 
-                    (std::pair<typename Triangulation::edge_index, ct> const& be, int const&)
+                    (std::pair<typename Triangulation::halfedge_index, ct> const& be, int const&)
                     {
                         if(is_visible(be)) return true;
                         else return false;
                     };
                 auto vis_large = [&is_visible]
-                    (std::pair<typename Triangulation::edge_index, ct> const& be, int const&)
+                    (std::pair<typename Triangulation::halfedge_index, ct> const& be, int const&)
                     {
                         if(is_visible(be)) return false;
                         else return true; 
@@ -248,15 +248,15 @@ void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool 
     //Step 9
     if(legalize)
     {
-        std::vector<typename Triangulation::edge_index> L;
+        std::vector<typename Triangulation::halfedge_index> L;
         for(std::size_t i = 0; i < out.faces(); ++i)
         {
             for(unsigned short j = 0; j<2 ; ++j)
                 if(i > out.neighbour(i, j)) {
-                    L.push_back(typename Triangulation::edge_index(i,j));
+                    L.push_back(typename Triangulation::halfedge_index(i,j));
                 }
         }
-        auto edge_legal = [&out](typename Triangulation::edge_index const& e)
+        auto edge_legal = [&out](typename Triangulation::halfedge_index const& e)
             {
                 auto const& p1 = out.face_vertex(e.m_f, 0);
                 auto const& p2 = out.face_vertex(e.m_f, 1);
