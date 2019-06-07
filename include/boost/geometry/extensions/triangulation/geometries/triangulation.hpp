@@ -106,6 +106,13 @@ public:
 		face_vertex_index m_v;
 	};
 
+    struct fulledge_index
+    {
+        fulledge_index(face_index f1, face_vertex_index v1, face_index f2, face_vertex_index v2):m_f1(f1), m_f2(f2), m_v1(v1), m_v2(v2) {}
+        face_index m_f1, m_f2;
+        face_vertex_index m_v1, m_v2;
+    };
+
     void debug_print() 
     {
         std::cout << "Vertices: \n";
@@ -258,19 +265,9 @@ public:
     {
         face_index fi = m_vertices[v].m_f;
         unsigned short vi;
-        if(m_faces[fi].m_v[0] == std::begin(m_vertices)+v) vi = 0;
-        else if(m_faces[fi].m_v[1] == std::begin(m_vertices)+v) vi = 1;
-        else vi = 2;
-        if(m_faces.size()==1) 
-            return vi == 2 ? 
-                std::distance<typename vertex_container::const_iterator>(m_vertices.begin(),m_faces[fi].m_v[0]) : 
-                std::distance<typename vertex_container::const_iterator>(m_vertices.begin(),m_faces[fi].m_v[vi+1]);
-        halfedge_index e = prev(halfedge_index{fi, vi});
-        while( opposite(e).m_f != invalid )
-        {
-            e = next(opposite(e));
-        }
-        return std::distance<typename vertex_container::const_iterator>(std::begin(m_vertices),m_faces[e.m_f].m_v[ e.m_v == 0 ? 2 : e.m_v - 1 ]);
+        if(m_faces[fi].m_v[0] == std::begin(m_vertices)+v) return std::distance<typename vertex_container::const_iterator>(m_vertices.begin(),m_faces[fi].m_v[1]);
+        else if(m_faces[fi].m_v[1] == std::begin(m_vertices)+v) return std::distance<typename vertex_container::const_iterator>(m_vertices.begin(),m_faces[fi].m_v[2]);
+        else return std::distance<typename vertex_container::const_iterator>(m_vertices.begin(),m_faces[fi].m_v[0]);
     }
 
     vertex_index boundary_prev(vertex_index const& v) const
@@ -314,8 +311,10 @@ public:
         unsigned short const& v1 = e.m_v;
         unsigned short const v2 = f1.m_o[v1];
 
-        f1.m_v[ v1 == 0 ? 2 : v1 - 1 ] -> m_f = fi2;
-        f2.m_v[ v2 == 0 ? 2 : v2 - 1  ]-> m_f = fi1;
+        if( f1.m_v[ v1 == 0 ? 2 : v1 - 1 ] -> m_f == fi1 ) 
+            f1.m_v[ v1 == 0 ? 2 : v1 - 1 ] -> m_f = fi2;
+        if( f2.m_v[ v2 == 0 ? 2 : v2 - 1  ]-> m_f == fi2)
+            f2.m_v[ v2 == 0 ? 2 : v2 - 1  ]-> m_f = fi1;
 		f1.m_v[ v1 == 0 ? 2 : v1 - 1 ] = f2.m_v[ v2 ];
 		f2.m_v[ v2 == 0 ? 2 : v2 - 1 ] = f1.m_v[ v1 ];
 
@@ -348,6 +347,7 @@ public:
 		m_faces.push_back(face_ref<Point>{ {{m_vertices.begin()+v, m_faces[f].m_v[ adj == 0 ? 2 : adj - 1 ], m_faces[f].m_v[ adj == 2 ? 0 : adj + 1 ] }},
 			{{f, invalid, invalid}},
             {{adj, 4, 4}}});
+        m_faces.back().m_v[2]->m_f = m_faces.size() - 1;
 		return m_faces.size()-1;
 	}
 
