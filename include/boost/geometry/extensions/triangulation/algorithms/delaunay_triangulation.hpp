@@ -128,121 +128,117 @@ void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool 
             std::make_pair(e1, ct(std::get<2>(points[1]))), 
             std::make_pair(e2, ct(std::get<2>(points[2]))), 
             std::make_pair(e3, ct(std::get<2>(points[0]))) };
-        typename std::vector<std::pair<typename Triangulation::halfedge_index, ct>>::iterator nfv, nlv, nfv2 = convex_hull.end(), nlv2 = convex_hull.end();
         for(int i=3; i<points.size(); ++i)
         {
             auto new_vertex = out.add_vertex(std::get<0>(points[i]));
             auto const& p = out.vertex(new_vertex);
             auto is_visible = [&out, &p](std::pair<typename Triangulation::halfedge_index, ct> const& bep)
-                    {
-                        const auto& be = std::get<0>(bep);
-                        const auto s = out.face_segment(be);
-                        const auto p1 = s.first;
-                        const auto p2 = s.second;
-                        bool result = SideStrategy::apply(
-                            p1,
-                            p2,     
-                            p)<0;
-                        return result;
-                    };
-            const bool linear_hull_search = false;
-            if(!linear_hull_search)
-            {
-                const auto& ref_angle = std::get<1>(*convex_hull.begin());
-                auto angle = std::get<2>(points[i])-ref_angle;       
-                if(angle < 0) angle += 2*PI;
-                ct opposite = angle - PI;
-                if(opposite < 0) opposite += 2*PI;
+                {
+                    const auto& be = std::get<0>(bep);
+                    const auto s = out.face_segment(be);
+                    const auto p1 = s.first;
+                    const auto p2 = s.second;
+                    bool result = SideStrategy::apply(
+                        p1,
+                        p2,     
+                        p)<0;
+                    return result;
+                };
+            const auto& ref_angle = std::get<1>(*convex_hull.begin());
+            auto angle = std::get<2>(points[i])-ref_angle;       
+            if(angle < 0) angle += 2*PI;
+            ct opposite = angle - PI;
+            if(opposite < 0) opposite += 2*PI;
 
-                for(int i=0; i < convex_hull.size() ; ++i) {
-                    auto ba = std::get<1>(convex_hull[i]);
-                    auto p = out.face_segment(std::get<0>(convex_hull[i])).first;
-                }  
-                for(int i=0; i < convex_hull.size() ; ++i) {
-                    auto ba = std::get<1>(convex_hull[i]) - ref_angle;
+            for(int i=0; i < convex_hull.size() ; ++i) {
+                auto ba = std::get<1>(convex_hull[i]);
+                auto p = out.face_segment(std::get<0>(convex_hull[i])).first;
+            }  
+            for(int i=0; i < convex_hull.size() ; ++i) {
+                auto ba = std::get<1>(convex_hull[i]) - ref_angle;
+                if(ba < 0) ba += 2*PI;
+            }
+            auto pred = [&ref_angle, &PI]
+                (std::pair<typename Triangulation::halfedge_index, ct> const& be, ct const& a)
+                {
+                    auto ba = std::get<1>(be) - ref_angle;
                     if(ba < 0) ba += 2*PI;
-                }
-                auto pred = [&ref_angle, &PI]
-                    (std::pair<typename Triangulation::halfedge_index, ct> const& be, ct const& a)
-                    {
-                        auto ba = std::get<1>(be) - ref_angle;
-                        if(ba < 0) ba += 2*PI;
-                        return ba < a;
-                    };
-                auto vis_edge = std::lower_bound(convex_hull.begin(), convex_hull.end(), angle, pred);
-                if( vis_edge == convex_hull.begin() ) vis_edge = convex_hull.end()-1; else --vis_edge;
-                auto invis_edge = std::lower_bound(convex_hull.begin(), convex_hull.end(), opposite, pred);
-                if( invis_edge == convex_hull.begin() ) invis_edge = convex_hull.end()-1; else --invis_edge;
+                    return ba < a;
+                };
+            auto vis_edge = std::lower_bound(convex_hull.begin(), convex_hull.end(), angle, pred);
+            if( vis_edge == convex_hull.begin() ) vis_edge = convex_hull.end()-1; else --vis_edge;
+            auto invis_edge = std::lower_bound(convex_hull.begin(), convex_hull.end(), opposite, pred);
+            if( invis_edge == convex_hull.begin() ) invis_edge = convex_hull.end()-1; else --invis_edge;
 
-                auto vis_small = [&is_visible] 
-                    (std::pair<typename Triangulation::halfedge_index, ct> const& be, int const&)
-                    {
-                        if(is_visible(be)) return true;
-                        else return false;
-                    };
-                auto vis_large = [&is_visible]
-                    (std::pair<typename Triangulation::halfedge_index, ct> const& be, int const&)
-                    {
-                        if(is_visible(be)) return false;
-                        else return true; 
-                    };
-                if(vis_edge < invis_edge) {
-                    if(is_visible(*convex_hull.begin())) {
-                        nfv = convex_hull.begin();
-                        nlv = std::lower_bound(vis_edge, invis_edge, 0, vis_small);
-                        nfv2 = std::lower_bound(invis_edge, convex_hull.end(), 0, vis_large);
-                        nlv2 = convex_hull.end();
-                    } else {
-                        nfv = std::lower_bound(convex_hull.begin(), vis_edge, 0, vis_large);
-                        nlv = std::lower_bound(vis_edge, convex_hull.end(), 0, vis_small);
-                    }
+            auto vis_small = [&is_visible] 
+                (std::pair<typename Triangulation::halfedge_index, ct> const& be, int const&)
+                {
+                    if(is_visible(be)) return true;
+                    else return false;
+                };
+            auto vis_large = [&is_visible]
+                (std::pair<typename Triangulation::halfedge_index, ct> const& be, int const&)
+                {
+                    if(is_visible(be)) return false;
+                    else return true; 
+                };
+            typedef typename std::vector<std::pair<typename Triangulation::halfedge_index, ct>>::iterator ch_iterator;
+            ch_iterator first_visible, last_visible, fv2 = convex_hull.end();
+            if(vis_edge < invis_edge) {
+                if(is_visible(*convex_hull.begin())) {
+                    first_visible = convex_hull.begin();
+                    last_visible = std::lower_bound(vis_edge, invis_edge, 0, vis_small);
+                    fv2 = std::lower_bound(invis_edge, convex_hull.end(), 0, vis_large);
                 } else {
-                    if(is_visible(*convex_hull.begin())) {
-                        nfv = convex_hull.begin();
-                        nlv = std::lower_bound(convex_hull.begin()+1, invis_edge, 0, vis_small);
-                        nfv2 = std::lower_bound(invis_edge, vis_edge, 0, vis_large);
-                        nlv2 = convex_hull.end();
-                    } else {
-                        nfv = std::lower_bound(invis_edge, vis_edge, 0, vis_large);
-                        nlv = std::lower_bound(vis_edge, convex_hull.end(), 0, vis_small);
-                    }
+                    first_visible = std::lower_bound(convex_hull.begin(), vis_edge, 0, vis_large);
+                    last_visible = std::lower_bound(vis_edge, convex_hull.end(), 0, vis_small);
+                }
+            } else {
+                if(is_visible(*convex_hull.begin())) {
+                    first_visible = convex_hull.begin();
+                    last_visible = std::lower_bound(convex_hull.begin()+1, invis_edge, 0, vis_small);
+                    fv2 = std::lower_bound(invis_edge, vis_edge, 0, vis_large);
+                } else {
+                    first_visible = std::lower_bound(invis_edge, vis_edge, 0, vis_large);
+                    last_visible = std::lower_bound(vis_edge, convex_hull.end(), 0, vis_small);
                 }
             }
-            auto first_visible = (linear_hull_search ? std::find_if(std::begin(convex_hull), std::end(convex_hull), is_visible) : nfv);
             auto first_visible_angle = std::get<1>(*first_visible);
             const bool begin_visible = first_visible == std::begin(convex_hull);
-            auto last_visible = (linear_hull_search ? std::find_if_not(first_visible, std::end(convex_hull), is_visible) : nlv);
-            const auto first_new_face = out.add_face_on_boundary(std::get<0>(*first_visible), new_vertex);
-            auto prev = first_new_face;
+            typename Triangulation::face_index prev = -1, fnf2 = -1;
+            bool looped = false;
+            ct fv2_angle;
+            if(begin_visible && is_visible(convex_hull.back()))
+            {
+                looped = true;
+                fv2_angle = std::get<1>(*fv2);
+                fnf2 = out.add_face_on_boundary(std::get<0>(*fv2), new_vertex);
+                prev = fnf2;
+                for(auto it = fv2 + 1; it != std::end(convex_hull); ++it)
+                {
+                    auto next = out.add_face_on_boundary(std::get<0>(*it), i);
+                    out.connect(out.next(out.face_edge(next)), out.prev(out.face_edge(prev)));
+                    prev = next;
+                }
+                convex_hull.erase(fv2, std::end(convex_hull));
+            }
+            const auto fnf = out.add_face_on_boundary(std::get<0>(*first_visible), new_vertex);
+            if(looped) {
+                out.connect(out.next(out.face_edge(fnf)), out.prev(out.face_edge(prev)));
+            }
+            prev = fnf;
             for(auto it = first_visible + 1; it != last_visible; ++it)
             {
                 auto next = out.add_face_on_boundary(std::get<0>(*it), i);
                 out.connect(out.next(out.face_edge(next)), out.prev(out.face_edge(prev)));
                 prev = next;
             }
-            if(begin_visible && is_visible(convex_hull.back()))
-            {
-                auto fv2 = (linear_hull_search ? std::find_if(last_visible, std::end(convex_hull), is_visible) : nfv2);
-                auto fv2_angle = std::get<1>(*fv2);
-                const auto fnf2 = out.add_face_on_boundary(std::get<0>(*fv2), new_vertex);
-                auto prev2 = fnf2; 
-                for(auto it = fv2 + 1; it != std::end(convex_hull); ++it)
-                {
-                    auto next = out.add_face_on_boundary(std::get<0>(*it), i);
-                    out.connect(out.next(out.face_edge(next)), out.prev(out.face_edge(prev2)));
-                    prev2 = next;
-                }
-                convex_hull.erase(fv2, std::end(convex_hull));
-                auto ip = convex_hull.erase(first_visible, last_visible);
-                ip = convex_hull.insert(ip, std::make_pair(out.prev(out.face_edge(prev)), ct(std::get<2>(points[i]))));
+            auto ip = convex_hull.erase(first_visible, last_visible);
+            ip = convex_hull.insert(ip, std::make_pair(out.prev(out.face_edge(prev)), ct(std::get<2>(points[i]))));
+            if(looped)
                 convex_hull.insert(ip, std::make_pair(out.next(out.face_edge(fnf2)), ct(fv2_angle)));
-                out.connect(out.next(out.face_edge(first_new_face)), out.prev(out.face_edge(prev2)));
-            }
-            else {
-                auto ip = convex_hull.erase(first_visible, last_visible);
-                ip = convex_hull.insert(ip, std::make_pair(out.prev(out.face_edge(prev)), ct(std::get<2>(points[i]))));
-                convex_hull.insert(ip, std::make_pair(out.next(out.face_edge(first_new_face)), ct(first_visible_angle)));
-            }
+            else
+                convex_hull.insert(ip, std::make_pair(out.next(out.face_edge(fnf)), ct(first_visible_angle)));
         }
     }
     //Step 9
