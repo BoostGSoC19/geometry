@@ -205,7 +205,7 @@ void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool 
             }
             auto first_visible_angle = std::get<1>(*first_visible);
             const bool begin_visible = first_visible == std::begin(convex_hull);
-            typename Triangulation::face_index prev = -1, fnf2 = -1;
+            typename Triangulation::face_iterator prev, fnf2;
             bool looped = false;
             ct fv2_angle;
             if(begin_visible && is_visible(convex_hull.back()))
@@ -245,7 +245,7 @@ void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool 
     if(legalize)
     {
         std::vector<typename Triangulation::halfedge_index> L;
-        for(std::size_t i = 0; i < out.faces(); ++i)
+        for(auto i = out.faces_begin(); i != out.faces_end(); ++i)
         {
             for(unsigned short j = 0; j<2 ; ++j)
                 if(i > out.neighbour(i, j)) {
@@ -270,7 +270,7 @@ void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool 
             auto const& f1 = e.m_f;
             auto const& v1 = e.m_v;
             auto const f2 = out.neighbour(f1, v1);
-            if(f2 == out.face_range().capacity())
+            if(f2 == out.face_range().begin() + out.face_range().capacity())
                 continue;
             auto const v2 = out.opposite(f1, v1);
             if( !edge_legal(e) ) {

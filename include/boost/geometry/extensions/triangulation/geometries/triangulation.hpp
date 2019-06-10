@@ -110,18 +110,17 @@ public:
     typedef Point point_type;
 	struct halfedge_index
 	{
-        halfedge_index(face_index f, face_vertex_index v):m_f(f), m_v(v) {}
-		face_index m_f;
+        halfedge_index(face_iterator f, face_vertex_index v):m_f(f), m_v(v) {}
+		face_iterator m_f;
 		face_vertex_index m_v;
 	};
 
     struct fulledge_index
     {
-        fulledge_index(face_index f1, face_vertex_index v1, face_index f2, face_vertex_index v2):m_f1(f1), m_f2(f2), m_v1(v1), m_v2(v2) {}
-        face_index m_f1, m_f2;
+        fulledge_index(face_iterator f1, face_vertex_index v1, face_iterator f2, face_vertex_index v2):m_f1(f1), m_f2(f2), m_v1(v1), m_v2(v2) {}
+        face_iterator m_f1, m_f2;
         face_vertex_index m_v1, m_v2;
     };
-
 
     void debug_print() 
     {
@@ -199,14 +198,24 @@ public:
         return m_vertices;
     }
 
-    typename face_container::const_iterator faces_begin() const
+    typename face_container::const_iterator faces_cbegin() const
 	{
 		return m_faces.cbegin();
 	}
 
-    typename face_container::const_iterator faces_end() const
+    typename face_container::iterator faces_begin()
+	{
+		return m_faces.begin();
+	}
+
+    typename face_container::const_iterator faces_cend() const
 	{
 		return m_faces.cend();
+	}
+
+    typename face_container::iterator faces_end() 
+	{
+		return m_faces.end();
 	}
 
     template <typename InputIt>
@@ -216,9 +225,9 @@ public:
         m_faces.reserve(2 * m_vertices.size() - 5);
     }
 
-    Point const& face_vertex(face_index f, face_vertex_index v)
+    Point const& face_vertex(face_iterator f, face_vertex_index v)
     {
-        return m_faces[f].m_v[v]->m_p;
+        return f -> m_v[v] -> m_p;
     }
 
     segment_type face_segment(halfedge_index e)
@@ -231,19 +240,25 @@ public:
         return m_vertices[v].m_p;
     }
 
-    face_index neighbour(face_index f, unsigned short v) const
+    face_iterator neighbour(face_iterator f, unsigned short v) const
     {
-        return std::distance<const_face_iterator>(m_faces.begin(), m_faces[f].m_f[v]);
+        return f -> m_f[v];
     }
 
-    face_vertex_index opposite(face_index f, unsigned short v) const
+
+    const_face_iterator neighbour(const_face_iterator f, unsigned short v) const
     {
-        return m_faces[f].m_o[v];
+        return f -> m_f[v];
+    }
+
+    face_vertex_index opposite(face_iterator f, unsigned short v) const
+    {
+        return f -> m_o[v];
     }
 
     halfedge_index opposite(halfedge_index const& e) const
     {
-        return halfedge_index{ std::distance<const_face_iterator>(m_faces.begin(), m_faces[e.m_f].m_f[e.m_v]), m_faces[e.m_f].m_o[e.m_v] };
+        return halfedge_index{ e.m_f -> m_f[e.m_v], e.m_f -> m_o[e.m_v] };
     }
 
     halfedge_index next(halfedge_index const& e) const
@@ -261,39 +276,34 @@ public:
         return m_boundary_vertex;
     }
 
-    face_ref<Point> const& face(face_index const& fi) const
-    {
-        return *(m_faces.begin() + fi);
-    }
-
     vertex_index boundary_next(vertex_index const& v) const
     {
-        face_index fi = std::distance<const_face_iterator>(m_faces.begin(), m_vertices[v].m_f);
-        if(m_faces[fi].m_v[0] == std::begin(m_vertices) + v )
-            return std::distance<typename vertex_container::const_iterator>(m_vertices.begin(), m_faces[fi].m_v[1]);
-        else if(m_faces[fi].m_v[1] == std::begin(m_vertices)+v) 
-            return std::distance<typename vertex_container::const_iterator>(m_vertices.begin(), m_faces[fi].m_v[2]);
+        face_iterator fi = m_vertices[v].m_f;
+        if(fi -> m_v[0] == std::begin(m_vertices) + v )
+            return std::distance<typename vertex_container::const_iterator>(m_vertices.begin(), fi -> m_v[1]);
+        else if(fi -> m_v[1] == std::begin(m_vertices)+v) 
+            return std::distance<typename vertex_container::const_iterator>(m_vertices.begin(), fi -> m_v[2]);
         else 
-            return std::distance<typename vertex_container::const_iterator>(m_vertices.begin(), m_faces[fi].m_v[0]);
+            return std::distance<typename vertex_container::const_iterator>(m_vertices.begin(), fi -> m_v[0]);
     }
 
     vertex_index boundary_prev(vertex_index const& v) const
     {
-        face_index fi = std::distance<const_face_iterator>(m_faces.begin(), m_vertices[v].m_f);
+        face_iterator fi = m_vertices[v].m_f;
         unsigned short vi;
-        if(m_faces[fi].m_v[0] == std::begin(m_vertices) + v) vi = 0;
-        else if(m_faces[fi].m_v[1] == std::begin(m_vertices) + v) vi = 1;
+        if(fi -> m_v[0] == std::begin(m_vertices) + v) vi = 0;
+        else if(fi -> m_v[1] == std::begin(m_vertices) + v) vi = 1;
         else vi = 2;
         if(m_faces.size()==1) 
             return vi == 0 ? 
-                std::distance<typename vertex_container::const_iterator>(std::begin(m_vertices), m_faces[fi].m_v[2])
-                : std::distance<typename vertex_container::const_iterator>(std::begin(m_vertices),m_faces[fi].m_v[vi-1]);
+                std::distance<typename vertex_container::const_iterator>(std::begin(m_vertices), fi -> m_v[2])
+                : std::distance<typename vertex_container::const_iterator>(std::begin(m_vertices), fi -> m_v[vi-1]);
         halfedge_index e = next(halfedge_index{fi, vi});
         while( opposite(e).m_f != invalid )
         {
             e = prev(opposite(e));
         }
-        return std::distance<typename vertex_container::const_iterator>(std::begin(m_vertices),m_faces[e.m_f].m_v[ e.m_v == 2 ? 0 : e.m_v + 1 ]);
+        return std::distance<typename vertex_container::const_iterator>(std::begin(m_vertices), e.m_f -> m_v[ e.m_v == 2 ? 0 : e.m_v + 1 ]);
     }
 
     void clear()
@@ -314,85 +324,85 @@ public:
 	
     void flip(const halfedge_index& e)
 	{
-        std::size_t const& fi1 = e.m_f;
-		face_ref<Point>& f1 = m_faces[fi1];
-        std::size_t const fi2 = std::distance<const_face_iterator>(m_faces.begin(), f1.m_f[e.m_v]);
-		face_ref<Point>& f2 = m_faces[fi2];
+        face_iterator fi1 = e.m_f;
+		face_ref<Point>& f1 = *fi1;
+        face_iterator fi2 = f1.m_f[e.m_v];
+		face_ref<Point>& f2 = *fi2;
         unsigned short const& v1 = e.m_v;
         unsigned short const v2 = f1.m_o[v1];
 
-        if( f1.m_v[ v1 == 0 ? 2 : v1 - 1 ] -> m_f == m_faces.begin() + fi1 ) 
-            f1.m_v[ v1 == 0 ? 2 : v1 - 1 ] -> m_f = m_faces.begin() + fi2;
-        if( f2.m_v[ v2 == 0 ? 2 : v2 - 1  ]-> m_f == m_faces.begin() + fi2)
-            f2.m_v[ v2 == 0 ? 2 : v2 - 1  ]-> m_f = m_faces.begin() + fi1;
+        if( f1.m_v[ v1 == 0 ? 2 : v1 - 1 ] -> m_f == fi1 ) 
+            f1.m_v[ v1 == 0 ? 2 : v1 - 1 ] -> m_f = fi2;
+        if( f2.m_v[ v2 == 0 ? 2 : v2 - 1  ]-> m_f == fi2)
+            f2.m_v[ v2 == 0 ? 2 : v2 - 1  ]-> m_f = fi1;
 		f1.m_v[ v1 == 0 ? 2 : v1 - 1 ] = f2.m_v[ v2 ];
 		f2.m_v[ v2 == 0 ? 2 : v2 - 1 ] = f1.m_v[ v1 ];
 
 		f1.m_f[v1] = f2.m_f[ v2 == 2 ? 0 : v2 + 1 ];
         f1.m_o[v1] = f2.m_o[ v2 == 2 ? 0 : v2 + 1 ];
         if(f1.m_f[v1] != m_faces.begin() + m_faces.capacity()) {
-            f1.m_f[v1] -> m_f[f2.m_o[v2 == 2 ? 0 : v2 + 1]] = m_faces.begin() + fi1;
+            f1.m_f[v1] -> m_f[f2.m_o[v2 == 2 ? 0 : v2 + 1]] = fi1;
             f1.m_f[v1] -> m_o[f2.m_o[v2 == 2 ? 0 : v2 + 1]] = v1;
         }
         f2.m_f[v2] = f1.m_f[ v1 == 2 ? 0 : v1 + 1 ];
         f2.m_o[v2] = f1.m_o[ v1 == 2 ? 0 : v1 + 1 ];
         if(f2.m_f[v2] != m_faces.begin() + m_faces.capacity()) {
-            f2.m_f[v2] -> m_f[f1.m_o[v1 == 2 ? 0 : v1 + 1]] = m_faces.begin() + fi2;
+            f2.m_f[v2] -> m_f[f1.m_o[v1 == 2 ? 0 : v1 + 1]] = fi2;
             f2.m_f[v2] -> m_o[f1.m_o[v1 == 2 ? 0 : v1 + 1]] = v2;
         }
-        f1.m_f[ v1 == 2 ? 0 : v1 + 1 ] = m_faces.begin() + fi2;
+        f1.m_f[ v1 == 2 ? 0 : v1 + 1 ] = fi2;
         f1.m_o[ v1 == 2 ? 0 : v1 + 1 ] = v2 == 2 ? 0 : v2 + 1;
-		f2.m_f[ v2 == 2 ? 0 : v2 + 1 ] = m_faces.begin() + fi1;
+		f2.m_f[ v2 == 2 ? 0 : v2 + 1 ] = fi1;
         f2.m_o[ v2 == 2 ? 0 : v2 + 1 ] = v1 == 2 ? 0 : v1 + 1;
 	}
 
-	face_index add_face_on_boundary(halfedge_index e, vertex_index v)
+	face_iterator add_face_on_boundary(halfedge_index e, vertex_index v)
 	{
         const auto f = e.m_f;
         const auto adj = e.m_v;
-        m_faces[f].m_o[adj] = 0;
+        f -> m_o[adj] = 0;
         m_boundary_vertex = v;
-		m_faces.push_back(face_ref<Point>{ {{m_vertices.begin()+v, m_faces[f].m_v[ adj == 0 ? 2 : adj - 1 ], m_faces[f].m_v[ adj == 2 ? 0 : adj + 1 ] }},
-			{{m_faces.begin() + f, m_faces.begin() + m_faces.capacity(), m_faces.begin() + m_faces.capacity()}},
+		m_faces.push_back(face_ref<Point>{ {{m_vertices.begin()+v, f -> m_v[ adj == 0 ? 2 : adj - 1 ], f -> m_v[ adj == 2 ? 0 : adj + 1 ] }},
+			{{f, m_faces.begin() + m_faces.capacity(), m_faces.begin() + m_faces.capacity()}},
             {{adj, 4, 4}}});
-		m_faces[f].m_f[adj] = m_faces.end() - 1;
+		f -> m_f[adj] = m_faces.end() - 1;
         m_vertices[v].m_f = m_faces.end() - 1;
         m_faces.back().m_v[2]->m_f = m_faces.end() - 1;
-		return m_faces.size()-1;
+		return m_faces.end()-1;
 	}
 
-	face_index add_isolated_face(vertex_index v1, vertex_index v2, vertex_index v3)
+	face_iterator add_isolated_face(vertex_index v1, vertex_index v2, vertex_index v3)
 	{
         m_boundary_vertex = v1;
         m_faces.insert( m_faces.end(), 
             face_ref<Point>{ 
-                {{ m_vertices.begin()+v1, m_vertices.begin()+v2, m_vertices.begin()+v3 }}, 
+                {{ m_vertices.begin() + v1, m_vertices.begin() + v2, m_vertices.begin() + v3 }}, 
                 {{ m_faces.begin() + m_faces.capacity(),m_faces.begin() + m_faces.capacity(),m_faces.begin() + m_faces.capacity() }}, 
                 {{4, 4, 4}} } );
         m_vertices[v1].m_f = m_vertices[v2].m_f = m_vertices[v3].m_f = m_faces.end() - 1;
-		return m_faces.size() - 1;
+		return m_faces.end() - 1;
 	}
 
-    halfedge_index face_edge(face_index f, face_vertex_index v = 0) const
+    halfedge_index face_edge(face_iterator f, face_vertex_index v = 0) const
     {
         return halfedge_index{f, v};
     }
 
     void connect(halfedge_index e1, halfedge_index e2)
     {
-        face_index const& f1 = e1.m_f;
-        face_index const& f2 = e2.m_f;
+        face_iterator f1 = e1.m_f;
+        face_iterator f2 = e2.m_f;
         unsigned short& v1 = e1.m_v;
         unsigned short& v2 = e2.m_v;
-        m_faces[f1].m_f[v1] = m_faces.begin() + f2;
-        m_faces[f1].m_o[v1] = v2;
-        m_faces[f2].m_f[v2] = m_faces.begin() + f1;
-        m_faces[f2].m_o[v2] = v1;
-        if(m_faces[f1].m_v[ (v1 == 2 ? 0 : v1 + 1) ] -> m_f == m_faces.begin() + f1) {
-            m_faces[f1].m_v[ (v1 == 2 ? 0 : v1 + 1) ] -> m_f = m_faces.begin() + f2;
+        f1 -> m_f[v1] = f2;
+        f1 -> m_o[v1] = v2;
+        f2 -> m_f[v2] = f1;
+        f2 -> m_o[v2] = v1;
+        if(f1 -> m_v[ (v1 == 2 ? 0 : v1 + 1) ] -> m_f == f1) {
+            f1 -> m_v[ (v1 == 2 ? 0 : v1 + 1) ] -> m_f = f2;
         }
-        if(m_faces[f2].m_v[ (v2 == 2 ? 0 : v2 + 1) ] -> m_f == m_faces.begin() + f2) {
-            m_faces[f2].m_v[ (v2 == 2 ? 0 : v2 + 1) ] -> m_f = m_faces.begin() + f1;
+        if(f2 -> m_v[ (v2 == 2 ? 0 : v2 + 1) ] -> m_f == f2) {
+            f2 -> m_v[ (v2 == 2 ? 0 : v2 + 1) ] -> m_f = f1;
         }
     }
 
@@ -505,6 +515,7 @@ using triangulation_vertex_range = typename triangulation<Point>::vertex_contain
 
 } // namespace model
 
+/*
 template<typename Point>
 struct triangulation_face<model::triangulation<Point>>
 { 
@@ -512,7 +523,7 @@ struct triangulation_face<model::triangulation<Point>>
     {
         return t.face(fi);
     }
-};
+};*/
 
 struct triangulation_tag {};
 
@@ -617,43 +628,43 @@ typename std::vector<model::face_ref<Point>> face_adjacent_range(model::triangul
 }
 
 template<typename Point>
-typename std::vector<model::face_ref<Point>> face_incident_range(model::triangulation<Point> const& t, typename model::triangulation<Point>::face_index fi)
-{                                                             
-    auto const& f = t.face(fi);
+typename std::vector<model::face_ref<Point>> face_incident_range(model::triangulation<Point> const& t, typename model::triangulation<Point>::const_face_iterator fi)
+{
+    auto const& f = *fi;
     typename std::vector<model::face_ref<Point>> out;
-    typedef typename model::triangulation<Point>::face_index face_index;
+    typedef typename model::triangulation<Point>::const_face_iterator const_face_iterator;
     const std::size_t invalid = -1;
     for(unsigned int i = 0; i < 3; ++i)
     {
         auto n = t.neighbour(fi, i);
         auto m = t.neighbour(fi, (i == 2 ? 0 : i + 1));
-        face_index f_prev = fi;
+        const_face_iterator f_prev = fi;
         unsigned short v_prev = i;
-        if(n != t.face_range().capacity()) {
+        if(n != t.faces_cbegin() + t.face_range().capacity()) {
             f_prev = n;
-            v_prev = t.face(fi).m_o[i];
+            v_prev = fi -> m_o[i];
             v_prev = (v_prev == 0 ? 2 : v_prev - 1);
         }
         while(true)
         {
             auto next = t.neighbour(f_prev, v_prev);
-            if(next == t.face_range().capacity()) {
+            if(next == t.faces_cbegin() + t.face_range().capacity()) {
                 unsigned short j = (i == 2 ? 0 : i + 1);
                 auto m = t.neighbour(fi, j);  
-                if(m == t.face_range().capacity()) break;
+                if(m == t.faces_cbegin() + t.face_range().capacity()) break;
                 unsigned short prev_vertex_index = (i == 0 ? 2 : i - 1 );
                 auto const& prev_vertex_it = f.m_v[prev_vertex_index];
                 auto& first = *prev_vertex_it->m_f;
                 out.push_back(first);
-                f_prev = next = std::distance<typename model::triangulation<Point>::const_face_iterator>(t.faces_begin(), prev_vertex_it->m_f);
+                f_prev = next = prev_vertex_it->m_f;
                 if(first.m_v[0] == prev_vertex_it) v_prev = 1;
                 else if(first.m_v[1] == prev_vertex_it) v_prev = 2;
                 else v_prev = 0;
                 continue;
             } else {
                 if(next == fi) break;
-                out.push_back(t.face(next));
-                v_prev = t.face(f_prev).m_o[v_prev];
+                out.push_back(*next);
+                v_prev = f_prev -> m_o[v_prev];
                 v_prev = (v_prev == 0 ? 2 : v_prev - 1);
                 f_prev = next;
             }
