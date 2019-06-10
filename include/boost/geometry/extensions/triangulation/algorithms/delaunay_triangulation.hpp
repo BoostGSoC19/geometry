@@ -270,7 +270,7 @@ void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool 
             auto const& f1 = e.m_f;
             auto const& v1 = e.m_v;
             auto const f2 = out.neighbour(f1, v1);
-            if(f2 == Triangulation::invalid)
+            if(f2 == out.face_range().capacity())
                 continue;
             auto const v2 = out.opposite(f1, v1);
             if( !edge_legal(e) ) {
