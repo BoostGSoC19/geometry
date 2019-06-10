@@ -216,7 +216,7 @@ void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool 
                 prev = fnf2;
                 for(auto it = fv2 + 1; it != std::end(convex_hull); ++it)
                 {
-                    auto next = out.add_face_on_boundary(std::get<0>(*it), i);
+                    auto next = out.add_face_on_boundary(std::get<0>(*it), new_vertex);
                     out.connect(out.next(out.face_edge(next)), out.prev(out.face_edge(prev)));
                     prev = next;
                 }
@@ -229,7 +229,7 @@ void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool 
             prev = fnf;
             for(auto it = first_visible + 1; it != last_visible; ++it)
             {
-                auto next = out.add_face_on_boundary(std::get<0>(*it), i);
+                auto next = out.add_face_on_boundary(std::get<0>(*it), new_vertex);
                 out.connect(out.next(out.face_edge(next)), out.prev(out.face_edge(prev)));
                 prev = next;
             }
@@ -270,7 +270,7 @@ void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool 
             auto const& f1 = e.m_f;
             auto const& v1 = e.m_v;
             auto const f2 = out.neighbour(f1, v1);
-            if(f2 == out.face_range().begin() + out.face_range().capacity())
+            if(f2 == typename Triangulation::face_iterator())
                 continue;
             auto const v2 = out.opposite(f1, v1);
             if( !edge_legal(e) ) {
