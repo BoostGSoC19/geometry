@@ -803,6 +803,33 @@ indirect_range<typename model::triangulation<Point, VertexContainer, FaceContain
     return out;
 }
 
+template
+<
+    typename Point,
+    template<typename, typename> class VertexContainer,
+    template<typename, typename> class FaceContainer,
+    template<typename> class VertexAllocator,
+    template<typename> class FaceAllocator
+>
+indirect_range<typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::vertex_iterator>
+    vertex_incident_range(
+        model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator> & t,
+        typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::vertex_iterator vi
+    )
+{
+    typedef typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::vertex_iterator vertex_iterator;
+    indirect_range<vertex_iterator> out;
+    auto e = t.begin_vertex_edge(vi);
+    auto first_face = e.m_f2;
+    out.push_back(e.m_f2 -> m_v[ e.m_v2 == 0 ? 2 : e.m_v2 - 1 ]);
+    while(true) {
+        e = t.next_around_vertex(e);
+        if(e.m_f2 == t.invalid || e.m_f2 == first_face) break;
+        out.push_back(e.m_f2 -> m_v[ e.m_v2 == 0 ? 2 : e.m_v2 - 1 ]);
+    }
+    return out;
+}
+
 } // namespace geometry
 
 } // namespace boost
