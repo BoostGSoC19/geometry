@@ -248,7 +248,7 @@ void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool 
         for(auto i = out.faces_begin(); i != out.faces_end(); ++i)
         {
             for(unsigned short j = 0; j<2 ; ++j)
-                if(i > out.neighbour(i, j)) {
+                if(out.neighbour(i, j)!=out.invalid && &(*i) > &(*out.neighbour(i, j))) {
                     L.push_back(typename Triangulation::halfedge_index(i,j));
                 }
         }
