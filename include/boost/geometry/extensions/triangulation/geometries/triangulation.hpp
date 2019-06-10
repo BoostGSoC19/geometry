@@ -110,7 +110,7 @@ public:
         face_vertex_index m_v1, m_v2;
     };
 
-    void debug_print()
+/*    void debug_print()
     {
         std::cout << "Vertices: \n";
         for(std::size_t i = 0; i < m_vertices.size(); ++i)
@@ -123,12 +123,12 @@ public:
     }
 
     void debug_print_face(std::size_t i) {
-            const auto& f = m_faces[i];
+            const face_ref& f = m_faces[i];
             std::cout << "Face " << i << ":\n";
             for(unsigned short v = 0; v < 3; ++v)
                 std::cout << "Vertex " << v << ": " << std::distance<const_vertex_iterator>(m_vertices.begin(), f.m_v[v])
                     << ", Neighbour: " << std::distance<const_face_iterator>(m_faces.begin(), f.m_f[v]) << ", Opposite: " << f.m_o[v] << "\n";
-    }
+    }*/
 
     const face_iterator invalid = face_iterator();
     triangulation(std::size_t points = 3)
@@ -342,11 +342,11 @@ public:
 
     face_iterator add_face_on_boundary(halfedge_index e, vertex_iterator v)
     {
-        const auto f = e.m_f;
-        const auto adj = e.m_v;
+        const face_iterator f = e.m_f;
+        const face_vertex_index adj = e.m_v;
         f -> m_o[adj] = 0;
         m_boundary_vertex = v;
-        auto pos = m_faces.insert(m_faces.end(),
+        face_iterator pos = m_faces.insert(m_faces.end(),
             face_type{ {{v, f -> m_v[ adj == 0 ? 2 : adj - 1 ], f -> m_v[ adj == 2 ? 0 : adj + 1 ] }},
                 {{f, invalid, invalid}},
                 {{adj, 4, 4}}});
@@ -383,7 +383,7 @@ public:
     face_iterator add_isolated_face(vertex_iterator v1, vertex_iterator v2, vertex_iterator v3)
     {
         m_boundary_vertex = v1;
-        auto pos = m_faces.insert( m_faces.end(),
+        face_iterator pos = m_faces.insert( m_faces.end(),
             face_type{
                 {{ v1, v2, v3 }},
                 {{ invalid, invalid, invalid }},
@@ -447,14 +447,14 @@ public:
     bool valid() const
     {
         bool valid = true;
-        for(auto fi = m_faces.begin(); fi != m_faces.end(); ++fi)
+        for(const_face_iterator fi = m_faces.begin(); fi != m_faces.end(); ++fi)
         {
-            auto const& f = *fi;
+            face_type const& f = *fi;
             for(unsigned short v = 0 ; v < 3 ; ++v)
             {
                 if(f.m_f[v] == invalid)
                     continue;
-                auto const& o = f.m_o[v];
+                face_vertex_index const& o = f.m_o[v];
                 valid = valid && (f.m_f[v] -> m_o[o] == v);
                 if(!valid) {
                     std::cout << "1\n";
@@ -488,10 +488,10 @@ public:
         }
         for(const_vertex_iterator vi = m_vertices.cbegin(); vi != m_vertices.cend(); ++vi)
         {
-            auto const& v = *vi;
+            vertex_type const& v = *vi;
             if(v.m_f == invalid) continue;
             bool found = false;
-            for(unsigned short vj = 0; vj < 3 ; ++vj)
+            for(face_vertex_index vj = 0; vj < 3 ; ++vj)
             {
                 found = found || (v.m_f -> m_v[vj] == vi);
             }
@@ -673,8 +673,9 @@ indirect_range<typename model::triangulation<Point, VertexContainer, FaceContain
     )
 {
     typedef typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::face_iterator face_iterator;
-    auto const& f = *fi;
-    auto const invalid = t.invalid;
+    typedef typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::face_type face_type;
+    face_type const& f = *fi;
+    face_iterator const invalid = t.invalid;
     indirect_range<face_iterator> out;
     if(f.m_f[0] != invalid ) out.push_back(f.m_f[0]);
     if(f.m_f[1] != invalid ) out.push_back(f.m_f[1]);
@@ -714,17 +715,20 @@ indirect_range<typename model::triangulation<Point, VertexContainer, FaceContain
         typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::face_iterator fi
     )
 {
-    auto const& f = *fi;
     typedef typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::face_iterator face_iterator;
+    typedef typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::vertex_iterator vertex_iterator;
+    typedef typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::face_vertex_index face_vertex_index;
+    typedef typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::face_type face_type;
     typedef typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::const_face_iterator const_face_iterator;
+    face_type const& f = *fi;
     indirect_range<face_iterator> out;
-    auto const invalid = t.invalid;
-    for(unsigned int i = 0; i < 3; ++i)
+    face_iterator const invalid = t.invalid;
+    for(face_vertex_index i = 0; i < 3; ++i)
     {
-        auto n = t.neighbour(fi, i);
-        auto m = t.neighbour(fi, (i == 2 ? 0 : i + 1));
+        face_iterator n = t.neighbour(fi, i);
+        face_iterator m = t.neighbour(fi, (i == 2 ? 0 : i + 1));
         face_iterator f_prev = fi;
-        unsigned short v_prev = i;
+        face_vertex_index v_prev = i;
         if(n != invalid) {
             f_prev = n;
             v_prev = fi -> m_o[i];
@@ -734,12 +738,12 @@ indirect_range<typename model::triangulation<Point, VertexContainer, FaceContain
         {
             face_iterator next = t.neighbour(f_prev, v_prev);
             if(next == invalid) {
-                unsigned short j = (i == 2 ? 0 : i + 1);
-                auto m = t.neighbour(fi, j);
+                face_vertex_index j = (i == 2 ? 0 : i + 1);
+                face_iterator m = t.neighbour(fi, j);
                 if(m == invalid) break;
-                unsigned short prev_vertex_index = (i == 0 ? 2 : i - 1 );
-                auto const& prev_vertex_it = f.m_v[prev_vertex_index];
-                auto& first = *prev_vertex_it->m_f;
+                face_vertex_index prev_vertex_index = (i == 0 ? 2 : i - 1 );
+                vertex_iterator const& prev_vertex_it = f.m_v[prev_vertex_index];
+                face_type& first = *prev_vertex_it->m_f;
                 out.push_back(prev_vertex_it->m_f);
                 f_prev = next = prev_vertex_it->m_f;
                 if(first.m_v[0] == prev_vertex_it) v_prev = 1;
@@ -791,9 +795,10 @@ indirect_range<typename model::triangulation<Point, VertexContainer, FaceContain
     )
 {
     typedef typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::face_iterator face_iterator;
+    typedef typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::fulledge_index fulledge_index;
     indirect_range<face_iterator> out;
-    auto e = t.begin_vertex_edge(vi);
-    auto first_face = e.m_f2;
+    fulledge_index e = t.begin_vertex_edge(vi);
+    face_iterator first_face = e.m_f2;
     out.push_back(first_face);
     while(true) {
         e = t.next_around_vertex(e);
@@ -817,10 +822,12 @@ indirect_range<typename model::triangulation<Point, VertexContainer, FaceContain
         typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::vertex_iterator vi
     )
 {
+    typedef typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::face_iterator face_iterator;
     typedef typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::vertex_iterator vertex_iterator;
+    typedef typename model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::fulledge_index fulledge_index;
     indirect_range<vertex_iterator> out;
-    auto e = t.begin_vertex_edge(vi);
-    auto first_face = e.m_f2;
+    fulledge_index e = t.begin_vertex_edge(vi);
+    face_iterator first_face = e.m_f2;
     out.push_back(e.m_f2 -> m_v[ e.m_v2 == 0 ? 2 : e.m_v2 - 1 ]);
     while(true) {
         e = t.next_around_vertex(e);
