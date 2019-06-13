@@ -478,26 +478,22 @@ public:
                 face_vertex_index const& o = f.m_o[v];
                 valid = valid && (f.m_f[v] -> m_o[o] == v);
                 if(!valid) {
-                    std::cout << "1\n";
                     return false;
                 }
                 valid = valid && (f.m_f[v] -> m_f[o] == fi);
                 if(!valid) {
-                    std::cout << "2\n";
                     return false;
                 }
                 valid = valid && 
                     (f.m_v[ (v+1)%3 ] == f.m_f[v] -> m_v[ (o+2)%3 ]) 
                     && (f.m_v[ (v+2)%3 ] == f.m_f[v] -> m_v[ (o+1)%3 ]);
                 if(!valid) {
-                    std::cout << "3\n";
                     return false;
                 }
                 if(f.m_o[v] == 4) {
                     unsigned short next = (v + 1) % 3;
                     valid == valid && f.m_v[next]->m_f == fi;
                     if(!valid) {
-                        std::cout << "6\n";
                         return false;
                     }
 
@@ -507,7 +503,6 @@ public:
                 (strategy::side::side_by_triangle<>
                     ::apply(f.m_v[0]->m_p, f.m_v[1]->m_p, f.m_v[2]->m_p) > 0);
             if(!valid) {
-                std::cout << "4\n";
                 return false;
             }
         }
@@ -522,7 +517,6 @@ public:
             }
             valid = valid && found;
             if(!valid) {
-                std::cout << "Error 5 at " 
                     << std::distance<const_vertex_iterator>(m_vertices.cbegin(), vi) << "\n";
                 return false;
             }
