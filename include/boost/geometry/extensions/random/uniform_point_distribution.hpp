@@ -15,7 +15,7 @@ namespace boost { namespace geometry { namespace random
 {
 
     template<typename DomainGeometry, typename Point = typename geometry::point_type<DomainGeometry>::type>
-    dispatch::uniform_point_distribution<DomainGeometry, Point>
+    inline dispatch::uniform_point_distribution<DomainGeometry, Point>
     uniform_point_distribution(DomainGeometry const& domain)
     {
         return dispatch::uniform_point_distribution<DomainGeometry, Point>(domain);

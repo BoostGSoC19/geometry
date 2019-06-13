@@ -656,7 +656,7 @@ template
     template<typename> class VertexAllocator,
     template<typename> class FaceAllocator
 >
-typename model::triangulation
+inline typename model::triangulation
 <
     Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator
 >::vertex_container const&
@@ -673,7 +673,7 @@ template
     template<typename> class VertexAllocator,
     template<typename> class FaceAllocator
 >
-typename model::triangulation
+inline typename model::triangulation
 <
     Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator
 >
@@ -708,7 +708,7 @@ template
     template<typename> class VertexAllocator,
     template<typename> class FaceAllocator
 >
-indirect_range<
+inline indirect_range<
     typename model::triangulation<
         Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
         ::face_iterator>
@@ -745,7 +745,7 @@ template
     template<typename> class FaceAllocator,
     typename Iterator
 >
-indirect_range<
+inline indirect_range<
     typename model::triangulation<
         Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::face_iterator>
     face_adjacent_range(
@@ -764,7 +764,7 @@ template
     template<typename> class VertexAllocator,
     template<typename> class FaceAllocator
 >
-indirect_range<typename model::triangulation<
+inline indirect_range<typename model::triangulation<
     Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::face_iterator
 >
     face_incident_range(
@@ -834,7 +834,7 @@ template
     template<typename> class FaceAllocator,
     typename Iterator
 >
-indirect_range<
+inline indirect_range<
     typename model::triangulation<
         Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
         ::face_iterator>
@@ -854,7 +854,7 @@ template
     template<typename> class VertexAllocator,
     template<typename> class FaceAllocator
 >
-indirect_range<
+inline indirect_range<
     typename model::triangulation<
         Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
         ::face_iterator>
@@ -890,7 +890,7 @@ template
     template<typename> class VertexAllocator,
     template<typename> class FaceAllocator
 >
-indirect_range<typename model::triangulation
+inline indirect_range<typename model::triangulation
     <Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>::vertex_iterator>
     vertex_incident_range(
         model::triangulation<

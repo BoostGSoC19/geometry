@@ -142,7 +142,7 @@ namespace boost { namespace geometry { namespace random { namespace detail
     };
 
     template<typename Point, typename DomainGeometry, typename Generator>
-    Point sample_spherical_box_2d(DomainGeometry const& b, Generator& gen)
+    inline Point sample_spherical_box_2d(DomainGeometry const& b, Generator& gen)
     {
         typedef typename coordinate_type<Point>::type coordinate_type;
         typedef typename select_most_precise
@@ -259,7 +259,7 @@ namespace boost { namespace geometry { namespace random { namespace detail
     };
 
     template<typename Point, typename PointIn, typename LengthType>
-    Point sample_segment_spherical_2d(PointIn const& p1, PointIn const& p2, LengthType const& f)  
+    inline Point sample_segment_spherical_2d(PointIn const& p1, PointIn const& p2, LengthType const& f)  
     {   
         Point out;
         const auto lat1 = get_as_radian<1>(p1); 
@@ -288,7 +288,7 @@ namespace boost { namespace geometry { namespace random { namespace detail
     };
 
     template<typename Point, typename PointVec, typename IndexVec, typename LengthVec, typename LengthType>
-    Point sample_multi_line(PointVec const& point_cache, IndexVec const& skip_list, LengthVec const& accumulated_lengths, LengthType const& r)
+    inline Point sample_multi_line(PointVec const& point_cache, IndexVec const& skip_list, LengthVec const& accumulated_lengths, LengthType const& r)
     {
         std::size_t i = std::distance(accumulated_lengths.begin(),
             std::lower_bound(accumulated_lengths.begin(), accumulated_lengths.end(), r));

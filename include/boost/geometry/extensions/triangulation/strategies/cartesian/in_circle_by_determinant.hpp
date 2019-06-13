@@ -8,7 +8,7 @@ namespace detail
 {
     
 template <typename ct>
-ct determinant(
+inline ct determinant(
         const ct& v11, const ct& v12, const ct& v13, 
         const ct& v21, const ct& v22, const ct& v23, 
         const ct& v31, const ct& v32, const ct& v33)

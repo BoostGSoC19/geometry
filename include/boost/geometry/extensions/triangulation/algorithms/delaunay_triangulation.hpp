@@ -23,7 +23,7 @@ template
     typename Area,
     typename Point
 >
-Area triangle_area(const Point& p1, const Point& p2, const Point& p3) 
+inline Area triangle_area(const Point& p1, const Point& p2, const Point& p3) 
 {
     return determinant<Area>(
         get<0>(p2)-get<0>(p1), get<1>(p2)-get<1>(p1),
@@ -31,7 +31,7 @@ Area triangle_area(const Point& p1, const Point& p2, const Point& p3)
 }
 
 template<typename Point>
-typename default_comparable_distance_result<Point, Point>::type comparable_circumcircle_diameter(
+inline typename default_comparable_distance_result<Point, Point>::type comparable_circumcircle_diameter(
     const Point& p1, const Point& p2, const Point& p3)
 {
     typedef typename default_comparable_distance_result<Point, Point>::type dfcr;
@@ -44,7 +44,7 @@ template
 <
     typename Point
 >
-Point circumcircle_center(const Point& p1, const Point& p2, const Point& p3)
+inline Point circumcircle_center(const Point& p1, const Point& p2, const Point& p3)
 {
     typedef typename coordinate_type<Point>::type coordinate_type;
     coordinate_type ax = get<0>(p1);
@@ -65,7 +65,7 @@ template<
     typename SideStrategy,
     typename InCircleStrategy,
     typename CalculationType=double> // TODO: void CT
-void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool legalize)
+inline void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool legalize)
 {
     typedef typename PointContainer::value_type point_type;
     typedef typename default_distance_result<point_type, point_type>::type distance_type;
@@ -337,7 +337,7 @@ template<
     typename Triangulation,
     typename SideStrategy = strategy::side::side_by_triangle<>,
     typename InCircleStrategy = strategy::in_circle::fast_in_circle<>>
-void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool legalize = true)
+inline void delaunay_triangulation(PointContainer const & in, Triangulation& out, bool legalize = true)
 {
     detail::delaunay_triangulation::delaunay_triangulation<
         PointContainer, Triangulation, SideStrategy, InCircleStrategy>(in, out, legalize);
