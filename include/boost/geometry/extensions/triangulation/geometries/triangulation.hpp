@@ -492,7 +492,7 @@ public:
                 }
                 if(f.m_o[v] == 4) {
                     unsigned short next = (v + 1) % 3;
-                    valid == valid && f.m_v[next]->m_f == fi;
+                    valid = valid && f.m_v[next]->m_f == fi;
                     if(!valid) {
                         return false;
                     }
@@ -517,7 +517,6 @@ public:
             }
             valid = valid && found;
             if(!valid) {
-                    << std::distance<const_vertex_iterator>(m_vertices.cbegin(), vi) << "\n";
                 return false;
             }
         }
@@ -682,16 +681,16 @@ template
 >
 struct indirect_range
 {
-    std::vector<Iterator> _iterators;
+    std::vector<Iterator> m_iterators;
 public:
-    void push_back(Iterator i) {_iterators.push_back(i);}
+    void push_back(Iterator i) {m_iterators.push_back(i);}
     typedef boost::indirect_iterator<typename std::vector<Iterator>::const_iterator> const_iterator;
     typedef boost::indirect_iterator<typename std::vector<Iterator>::const_iterator> iterator;
 
-    const_iterator begin() const { return const_iterator(_iterators.cbegin()); }
-    const_iterator end() const { return const_iterator(_iterators.cend()); }
-    iterator begin() { return iterator(_iterators.begin()); }
-    iterator end() { return iterator(_iterators.end()); }
+    const_iterator begin() const { return const_iterator(m_iterators.cbegin()); }
+    const_iterator end() const { return const_iterator(m_iterators.cend()); }
+    iterator begin() { return iterator(m_iterators.begin()); }
+    iterator end() { return iterator(m_iterators.end()); }
 };
 
 template
