@@ -294,7 +294,7 @@ inline void delaunay_triangulation(PointContainer const & in, Triangulation& out
         for(face_iterator i = out.faces_begin(); i != out.faces_end(); ++i)
         {
             for(face_vertex_index j = 0; j<2 ; ++j)
-                if(out.neighbour(i, j)!=out.invalid && &(*i) > &(*out.neighbour(i, j))) {
+                if(out.neighbour(i, j)!=Triangulation::invalid() && &(*i) > &(*out.neighbour(i, j))) {
                     L.push_back(halfedge_index(i,j));
                 }
         }
