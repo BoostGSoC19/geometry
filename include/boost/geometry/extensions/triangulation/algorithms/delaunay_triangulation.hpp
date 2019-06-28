@@ -42,11 +42,12 @@ inline typename default_comparable_distance_result<Point, Point>::type comparabl
 
 template
 <
-    typename Point
+    typename PointOut,
+    typename PointIn
 >
-inline Point circumcircle_center(const Point& p1, const Point& p2, const Point& p3)
+inline PointOut circumcircle_center(const PointIn& p1, const PointIn& p2, const PointIn& p3)
 {
-    typedef typename coordinate_type<Point>::type coordinate_type;
+    typedef typename coordinate_type<PointIn>::type coordinate_type;
     coordinate_type ax = get<0>(p1);
     coordinate_type ay = get<1>(p1);
     coordinate_type bx = get<0>(p2);
@@ -56,7 +57,7 @@ inline Point circumcircle_center(const Point& p1, const Point& p2, const Point& 
     coordinate_type d = 2*(ax*(by-cy)+bx*(cy-ay)+cx*(ay-by));
     coordinate_type x = ((ax*ax+ay*ay)*(by-cy)+(bx*bx+by*by)*(cy-ay)+(cx*cx+cy*cy)*(ay-by))/d;
     coordinate_type y = ((ax*ax+ay*ay)*(cx-bx)+(bx*bx+by*by)*(ax-cx)+(cx*cx+cy*cy)*(bx-ax))/d;
-    return boost::geometry::make<Point>(x,y);
+    return boost::geometry::make<PointOut>(x,y);
 }
 
 template<
@@ -123,7 +124,7 @@ inline void delaunay_triangulation(PointContainer const & in, Triangulation& out
         + get<1>(std::get<0>(points[1])) 
         + get<1>(std::get<0>(points[2])))/3);
 
-    point_type C = circumcircle_center(
+    point_type C = circumcircle_center<point_type>(
         std::get<0>(points[0]),
         std::get<0>(points[1]),
         std::get<0>(points[2]));
