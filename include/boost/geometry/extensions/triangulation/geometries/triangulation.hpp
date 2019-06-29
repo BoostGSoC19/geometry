@@ -33,6 +33,7 @@ namespace model
 template
 <
     typename Point,
+    bool ClockWise = true,
     template<typename, typename> class VertexContainer = std::vector,
     template<typename, typename> class FaceContainer = std::vector,
     template<typename> class VertexAllocator = std::allocator,
@@ -84,6 +85,7 @@ struct reserve_if_vector<Value, std::vector, Allocator>{
 template
 <
     typename Point,
+    bool ClockWise,
     template<typename, typename> class VertexContainer,
     template<typename, typename> class FaceContainer,
     template<typename> class VertexAllocator,
@@ -106,6 +108,8 @@ public:
     typedef typename vertex_container::const_iterator const_vertex_iterator;
     typedef typename coordinate_type<Point>::type coordinate_type;
     typedef typename model::segment<Point> segment_type;
+
+    static const order_selector point_order = ClockWise? clockwise : counterclockwise;
     struct halfedge_index
     {
         halfedge_index(face_iterator f, face_vertex_index v):m_f(f), m_v(v) {}
@@ -626,7 +630,7 @@ template<typename Triangulation> struct tag<model::face_ref<Triangulation>>
 { typedef ring_tag type; };
 
 template<typename Triangulation> struct point_order<model::face_ref<Triangulation>>
-{ static const order_selector value = counterclockwise; };
+{ static const order_selector value = Triangulation::point_order; };
 
 template<typename Triangulation>
 struct closure<model::face_ref<Triangulation>>
@@ -645,6 +649,7 @@ struct face_range_type<model::triangulation<Point>> {
 template
 <
     typename Point,
+    bool ClockWise,
     template<typename, typename> class VertexContainer,
     template<typename, typename> class FaceContainer,
     template<typename> class VertexAllocator,
@@ -652,16 +657,17 @@ template
 >
 inline typename model::triangulation
 <
-    Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator
+    Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator
 >::vertex_container const&
     vertex_range(
-        model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
+        model::triangulation<Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
             const& t)
 { return t.vertex_range(); }
 
 template
 <
     typename Point,
+    bool ClockWise,
     template<typename, typename> class VertexContainer,
     template<typename, typename> class FaceContainer,
     template<typename> class VertexAllocator,
@@ -669,16 +675,17 @@ template
 >
 inline typename model::triangulation
 <
-    Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator
+    Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator
 >
     ::face_container const&
     face_range(model::triangulation<
-        Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator> const& t)
+        Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator> const& t)
 { return t.face_range(); }
 
 template
 <
     typename Point,
+    bool ClockWise,
     template<typename, typename> class VertexContainer,
     template<typename, typename> class FaceContainer,
     template<typename> class VertexAllocator,
@@ -688,14 +695,14 @@ template
 >
 inline void face_adjacent_range(
         model::triangulation<
-            Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>& t,
+            Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>& t,
         FaceIterator fi,
         OutputIterator out
     )
 {
     typedef typename model::triangulation
     <
-        Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator
+        Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator
     >
         triangulation;
     typedef typename triangulation::face_iterator face_iterator;
@@ -709,6 +716,7 @@ inline void face_adjacent_range(
 template
 <
     typename Point,
+    bool ClockWise,
     template<typename, typename> class VertexContainer,
     template<typename, typename> class FaceContainer,
     template<typename> class VertexAllocator,
@@ -718,13 +726,13 @@ template
 >
     inline void face_incident_faces(
         model::triangulation<
-            Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator> & t,
+            Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator> & t,
         FaceIterator fi,
         OutputIterator out
     )
 {
     typedef typename model::triangulation<
-        Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator> 
+        Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator> 
         triangulation;
     typedef typename triangulation::face_iterator face_iterator;
     typedef typename triangulation::vertex_iterator vertex_iterator;
@@ -773,6 +781,7 @@ template
 template
 <
     typename Point,
+    bool ClockWise,
     template<typename, typename> class VertexContainer,
     template<typename, typename> class FaceContainer,
     template<typename> class VertexAllocator,
@@ -780,15 +789,15 @@ template
     typename OutputIterator
 >
     inline void vertex_incident_faces(
-        model::triangulation<Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator> & t,
+        model::triangulation<Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator> & t,
         typename model::triangulation<
-            Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
+            Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
             ::vertex_iterator vi,
         OutputIterator out
     )
 {
     typedef typename model::triangulation<
-        Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator> 
+        Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator> 
         triangulation;
     typedef typename triangulation::face_iterator face_iterator;
     typedef typename triangulation::fulledge_index fulledge_index;
@@ -805,6 +814,7 @@ template
 template
 <
     typename Point,
+    bool ClockWise,
     template<typename, typename> class VertexContainer,
     template<typename, typename> class FaceContainer,
     template<typename> class VertexAllocator,
@@ -813,21 +823,21 @@ template
 >
     inline void vertex_incident_vertices(
         model::triangulation<
-            Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator> & t,
+            Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator> & t,
         typename model::triangulation<
-            Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
+            Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
             ::vertex_iterator vi,
         OutputIterator out
     )
 {
     typedef typename model::triangulation<
-        Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
+        Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
         ::face_iterator face_iterator;
     typedef typename model::triangulation<
-        Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
+        Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
         ::vertex_iterator vertex_iterator;
     typedef typename model::triangulation<
-        Point, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
+        Point, ClockWise, VertexContainer, FaceContainer, VertexAllocator, FaceAllocator>
         ::fulledge_index fulledge_index;
     fulledge_index e = t.begin_vertex_edge(vi);
     face_iterator first_face = e.m_f2;

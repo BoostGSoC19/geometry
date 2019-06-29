@@ -20,10 +20,13 @@ public:
     typedef typename Triangulation::face_iterator face_iterator;
     voronoi_vertex_view(face_iterator f):
         m_f(f),
-        m_p(boost::geometry::detail::delaunay_triangulation::circumcircle_center<point_type>(
-            *f->begin(),
-            *(f->begin()+1),
-            *(f->begin()+2))) {}
+        m_p(boost::geometry::detail::delaunay_triangulation::circumcircle_center
+            <
+                point_type,
+                boost::geometry::point_order<typename Triangulation::face_type>::value == clockwise
+            >(*f->begin(),
+                *(f->begin()+1),
+                *(f->begin()+2))) {}
     point_type const* point() const { return m_p; }
     face_iterator base() const { return m_f; }
     point_type m_p;
@@ -43,18 +46,18 @@ public:
     typedef typename std::vector<voronoi_vertex_view<Triangulation>>::const_iterator const_iterator;
     typedef typename std::vector<voronoi_vertex_view<Triangulation>>::iterator iterator;
 
-    typedef voronoi_vertex_view<Triangulation> voronoi_vertex_view;
+    typedef voronoi_vertex_view<Triangulation> voronoi_vertex;
     voronoi_face_view(Triangulation& t, vertex_iterator v):m_v(v) {
         struct transforming_back_insert {
-            transforming_back_insert(std::back_insert_iterator<std::vector<voronoi_vertex_view>> bi):
+            transforming_back_insert(std::back_insert_iterator<std::vector<voronoi_vertex>> bi):
                 m_underlying(bi) {};
-            std::back_insert_iterator<std::vector<voronoi_vertex_view>> m_underlying;
+            std::back_insert_iterator<std::vector<voronoi_vertex>> m_underlying;
             transforming_back_insert& operator*() {return *this;}
             transforming_back_insert& operator++() {return *this;}
             transforming_back_insert& operator++(int) {return *this;}
             transforming_back_insert& operator=(face_iterator const& f)
             {
-                m_underlying = voronoi_vertex_view(f);
+                m_underlying = voronoi_vertex(f);
                 return *this;
             }
         };
@@ -63,7 +66,7 @@ public:
     const_iterator begin() const { return m_voronoi_v.begin(); }
     const_iterator end() const { return m_voronoi_v.end(); }
 private:
-    std::vector<voronoi_vertex_view> m_voronoi_v;
+    std::vector<voronoi_vertex> m_voronoi_v;
     vertex_iterator m_v;
 };
 

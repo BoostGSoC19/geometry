@@ -21,21 +21,26 @@ namespace detail { namespace delaunay_triangulation
 template
 <
     typename Area,
-    typename Point
+    typename Point,
+    bool ClockWise
 >
 inline Area triangle_area(const Point& p1, const Point& p2, const Point& p3) 
 {
-    return determinant<Area>(
-        get<0>(p2)-get<0>(p1), get<1>(p2)-get<1>(p1),
-        get<0>(p3)-get<0>(p1), get<1>(p3)-get<1>(p1))/2;
+    return !ClockWise ?
+         determinant<Area>(
+            get<0>(p2)-get<0>(p1), get<1>(p2)-get<1>(p1),
+            get<0>(p3)-get<0>(p1), get<1>(p3)-get<1>(p1))/2
+        : determinant<Area>(
+            get<0>(p3)-get<0>(p1), get<1>(p3)-get<1>(p1),
+            get<0>(p2)-get<0>(p1), get<1>(p2)-get<1>(p1))/2 ;
 }
 
-template<typename Point>
+template<typename Point, bool ClockWise>
 inline typename default_comparable_distance_result<Point, Point>::type comparable_circumcircle_diameter(
     const Point& p1, const Point& p2, const Point& p3)
 {
     typedef typename default_comparable_distance_result<Point, Point>::type dfcr;
-    dfcr comp_area = triangle_area<dfcr>(p1,p2,p3);
+    dfcr comp_area = triangle_area<dfcr, Point, ClockWise>(p1,p2,p3);
     return comparable_distance(p1,p2) * comparable_distance(p1,p3) * comparable_distance(p2,p3)
         / (comp_area * comp_area);
 }
@@ -43,6 +48,7 @@ inline typename default_comparable_distance_result<Point, Point>::type comparabl
 template
 <
     typename PointOut,
+    bool ClockWise,
     typename PointIn
 >
 inline PointOut circumcircle_center(const PointIn& p1, const PointIn& p2, const PointIn& p3)
@@ -50,10 +56,10 @@ inline PointOut circumcircle_center(const PointIn& p1, const PointIn& p2, const 
     typedef typename coordinate_type<PointIn>::type coordinate_type;
     coordinate_type ax = get<0>(p1);
     coordinate_type ay = get<1>(p1);
-    coordinate_type bx = get<0>(p2);
-    coordinate_type by = get<1>(p2);
-    coordinate_type cx = get<0>(p3);
-    coordinate_type cy = get<1>(p3);
+    coordinate_type bx = get<0>( !ClockWise ? p2 : p3 );
+    coordinate_type by = get<1>( !ClockWise ? p2 : p3 );
+    coordinate_type cx = get<0>( !ClockWise ? p3 : p2 );
+    coordinate_type cy = get<1>( !ClockWise ? p3 : p2 );
     coordinate_type d = 2*(ax*(by-cy)+bx*(cy-ay)+cx*(ay-by));
     coordinate_type x = ((ax*ax+ay*ay)*(by-cy)+(bx*bx+by*by)*(cy-ay)+(cx*cx+cy*cy)*(ay-by))/d;
     coordinate_type y = ((ax*ax+ay*ay)*(cx-bx)+(bx*bx+by*by)*(ax-cx)+(cx*cx+cy*cy)*(bx-ax))/d;
@@ -70,6 +76,7 @@ inline void delaunay_triangulation(PointContainer const & in, Triangulation& out
 {
     typedef typename PointContainer::value_type point_type;
     typedef typename default_distance_result<point_type, point_type>::type distance_type;
+    const bool is_cw = boost::geometry::point_order<typename Triangulation::face_type>::value == clockwise;
     typedef CalculationType ct;
     std::vector<std::tuple<point_type, ct, ct>> points;
     points.reserve(std::size(in));
@@ -92,7 +99,7 @@ inline void delaunay_triangulation(PointContainer const & in, Triangulation& out
         std::size_t min_index = 2;
         for( std::size_t i = 2 ; std::get<1>(points[i]) < min_circumdiameter && i < points.size() ; ++i)
         {
-            distance_type diam = comparable_circumcircle_diameter(
+            distance_type diam = comparable_circumcircle_diameter<point_type, is_cw>(
                 std::get<0>(points[0]), std::get<0>(points[1]), std::get<0>(points[i]));
             if(diam < min_circumdiameter) {
                 min_index = i;
@@ -102,7 +109,8 @@ inline void delaunay_triangulation(PointContainer const & in, Triangulation& out
         std::swap(points[2], points[min_index]);
     }
     //Step 5
-    if(SideStrategy::apply(std::get<0>(points[0]), std::get<0>(points[1]), std::get<0>(points[2])) < 0) {
+    if((!is_cw && SideStrategy::apply(std::get<0>(points[0]), std::get<0>(points[1]), std::get<0>(points[2])) < 0) 
+        || (is_cw && SideStrategy::apply(std::get<0>(points[0]), std::get<0>(points[1]), std::get<0>(points[2])) > 0)) {
         std::swap(points[1], points[2]);
     }
     const double PI = 3.14159265358979323846;
@@ -124,7 +132,7 @@ inline void delaunay_triangulation(PointContainer const & in, Triangulation& out
         + get<1>(std::get<0>(points[1])) 
         + get<1>(std::get<0>(points[2])))/3);
 
-    point_type C = circumcircle_center<point_type>(
+    point_type C = circumcircle_center<point_type, is_cw>(
         std::get<0>(points[0]),
         std::get<0>(points[1]),
         std::get<0>(points[2]));
@@ -133,8 +141,11 @@ inline void delaunay_triangulation(PointContainer const & in, Triangulation& out
             [&C, &cen, &PI](std::tuple<point_type, ct, ct>& p){ 
                 std::get<1>(p) = comparable_distance(std::get<0>(p), C);
                 std::get<2>(p) = 
-                    std::atan2( get<1>(std::get<0>(p)) - get<1>(cen), 
-                        get<0>(std::get<0>(p)) - get<0>(cen) ) + PI;
+                    !is_cw ? 
+                         std::atan2( get<1>(std::get<0>(p)) - get<1>(cen), 
+                            get<0>(std::get<0>(p)) - get<0>(cen) ) + PI
+                        : 2*PI - (std::atan2( get<1>(std::get<0>(p)) - get<1>(cen),
+                            get<0>(std::get<0>(p)) - get<0>(cen) ) + PI);
             });
         std::sort(std::begin(points)+3, std::end(points),
             [](std::tuple<point_type, ct, ct> const& p0, std::tuple<point_type, ct, ct> const& p1)
@@ -165,10 +176,8 @@ inline void delaunay_triangulation(PointContainer const & in, Triangulation& out
                     const segment_type s = out.face_segment(be);
                     const out_point_type p1 = s.first;
                     const out_point_type p2 = s.second;
-                    bool result = SideStrategy::apply(
-                        p1,
-                        p2,     
-                        p)<0;
+                    bool result = (!is_cw && SideStrategy::apply(p1,p2,p) < 0)
+                        || (is_cw && SideStrategy::apply(p1,p2,p) > 0);
                     return result;
                 };
             const ct& ref_angle = std::get<1>(*convex_hull.begin());
@@ -308,7 +317,9 @@ inline void delaunay_triangulation(PointContainer const & in, Triangulation& out
                         out.neighbour(e.m_f, e.m_v),
                         out.opposite(e.m_f, e.m_v)
                     );
-                return InCircleStrategy::apply(p1, p2, p3, p) <= 0;
+                return !is_cw ?
+                      InCircleStrategy::apply(p1, p2, p3, p) <= 0
+                    : InCircleStrategy::apply(p1, p3, p2, p) <= 0;
             };
         while( !std::empty(L) )
         {
