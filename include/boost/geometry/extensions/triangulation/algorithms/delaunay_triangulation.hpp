@@ -318,8 +318,8 @@ inline void delaunay_triangulation(PointContainer const & in, Triangulation& out
                         out.opposite(e.m_f, e.m_v)
                     );
                 return !is_cw ?
-                      InCircleStrategy::apply(p1, p2, p3, p) <= 0
-                    : InCircleStrategy::apply(p1, p3, p2, p) <= 0;
+                      InCircleStrategy::apply(p1, p2, p3, p) <= 0 || InCircleStrategy::apply(p1, p2, p, p3) > 0
+                    : InCircleStrategy::apply(p1, p3, p2, p) <= 0 || InCircleStrategy::apply(p1, p3, p, p2) > 0;
             };
         while( !std::empty(L) )
         {
