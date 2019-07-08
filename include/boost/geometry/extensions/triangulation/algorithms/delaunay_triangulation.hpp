@@ -35,12 +35,12 @@ inline Area triangle_area(const Point& p1, const Point& p2, const Point& p3)
             get<0>(p2)-get<0>(p1), get<1>(p2)-get<1>(p1))/2 ;
 }
 
-template<typename Point, bool ClockWise>
-inline typename default_comparable_distance_result<Point, Point>::type comparable_circumcircle_diameter(
+template<typename Point, typename CalculationType, typename SideStrategy>
+inline CalculationType comparable_circumcircle_diameter(
     const Point& p1, const Point& p2, const Point& p3)
 {
     typedef typename default_comparable_distance_result<Point, Point>::type dfcr;
-    dfcr comp_area = triangle_area<dfcr, Point, ClockWise>(p1,p2,p3);
+    CalculationType comp_area = SideStrategy::side_value(p1,p2,p3);
     return comparable_distance(p1,p2) * comparable_distance(p1,p3) * comparable_distance(p2,p3)
         / (comp_area * comp_area);
 }
@@ -80,26 +80,30 @@ inline void delaunay_triangulation(PointContainer const & in, Triangulation& out
     typedef CalculationType ct;
     std::vector<std::tuple<point_type, ct, ct>> points;
     points.reserve(std::size(in));
-    //Step 1
-    points.emplace_back(*std::begin(in),ct(0), ct(0));
-    //Step 2 & 3
-    std::transform(std::begin(in) + 1, std::end(in), std::back_inserter(points),
-        [&points](point_type const& p) {
+    //Step 1 & 2 & 3
+    point_type zero;
+    set<0>(zero, 0);
+    set<1>(zero, 0);
+    std::transform(std::begin(in), std::end(in), std::back_inserter(points),
+        [&points, &zero](point_type const& p) {
             return std::tuple<point_type, ct, ct>(p, 
-            boost::geometry::comparable_distance(p, std::get<0>(points[0])),
+            boost::geometry::comparable_distance(p, zero),
             0);
         });
-    std::sort(std::begin(points)+1, std::end(points), 
+    std::sort(std::begin(points), std::end(points),
             [](std::tuple<point_type, ct, ct> const& p0, std::tuple<point_type, ct, ct> const& p1) 
             { return std::get<1>(p0) < std::get<1>(p1); });
-
+    for(std::tuple<point_type, ct, ct>& p : points) std::get<1>(p) = boost::geometry::comparable_distance(std::get<0>(p), std::get<0>(points[0]));
+    std::sort(std::begin(points)+1, std::end(points),
+        [](std::tuple<point_type, ct, ct> const& p0, std::tuple<point_type, ct, ct> const& p1)
+        { return std::get<1>(p0) < std::get<1>(p1); });
     //Step 4
     {
         distance_type min_circumdiameter = std::numeric_limits<distance_type>::max();
         std::size_t min_index = 2;
         for( std::size_t i = 2 ; std::get<1>(points[i]) < min_circumdiameter && i < points.size() ; ++i)
         {
-            distance_type diam = comparable_circumcircle_diameter<point_type, is_cw>(
+            distance_type diam = comparable_circumcircle_diameter<point_type, CalculationType, SideStrategy>(
                 std::get<0>(points[0]), std::get<0>(points[1]), std::get<0>(points[i]));
             if(diam < min_circumdiameter) {
                 min_index = i;
@@ -176,8 +180,9 @@ inline void delaunay_triangulation(PointContainer const & in, Triangulation& out
                     const segment_type s = out.face_segment(be);
                     const out_point_type p1 = s.first;
                     const out_point_type p2 = s.second;
-                    bool result = (!is_cw && SideStrategy::apply(p1,p2,p) < 0)
-                        || (is_cw && SideStrategy::apply(p1,p2,p) > 0);
+                    auto det = SideStrategy::apply(p1,p2,p);
+                    bool result = (!is_cw && det < 0)
+                        || (is_cw && det > 0);
                     return result;
                 };
             const ct& ref_angle = std::get<1>(*convex_hull.begin());
@@ -211,7 +216,15 @@ inline void delaunay_triangulation(PointContainer const & in, Triangulation& out
                 opposite, pred);
             if( invis_edge == convex_hull.begin() ) invis_edge = convex_hull.end() - 1; 
             else --invis_edge;
-
+            if(!is_visible(*vis_edge)) {
+                invis_edge = vis_edge;
+                for(auto it = convex_hull.begin(); it != convex_hull.end(); ++it) {
+                    if(is_visible(*it)) {
+                        vis_edge = it;
+                        break;
+                    }
+                }
+            }
             auto vis_small = [&is_visible] 
                 (std::pair<typename Triangulation::halfedge_index, ct> const& be, int const&)
                 {

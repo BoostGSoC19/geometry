@@ -502,13 +502,13 @@ public:
                     }
 
                 }
-            }
+            }/*
             valid = valid && 
                 (strategy::side::side_by_triangle<>
                     ::apply(f.m_v[0]->m_p, f.m_v[1]->m_p, f.m_v[2]->m_p) > 0);
             if(!valid) {
                 return false;
-            }
+            }*/
         }
         for(const_vertex_iterator vi = m_vertices.cbegin(); vi != m_vertices.cend(); ++vi)
         {
