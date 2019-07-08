@@ -377,7 +377,6 @@ RealNumber incircle(std::array<RealNumber, 2> const& p1, std::array<RealNumber, 
     if (std::abs(det) > absolute_bound) {
         return det;
     }
-
     A_21_x_A_32[1] = two_product_tail(A_21, A_32, A_21_x_A_32[0]);     // (p2_x - p4_x) * (p3_y - p4_y)
     A_31_x_A_22[1] = two_product_tail(A_31, A_22, A_31_x_A_22[0]);     // (p3_x - p4_x) * (p2_y - p4_y)
     std::array<RealNumber, 4> C_13 = two_two_expansion_diff(A_21_x_A_32, A_31_x_A_22); // (bx - dx) * (cy - dy) - (cx - dx) * (by - dy)

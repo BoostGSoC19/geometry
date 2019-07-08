@@ -18,7 +18,7 @@ public:
         std::array<CalculationType, 2> pa {{ boost::geometry::get<0>(p1), boost::geometry::get<1>(p1) }};
         std::array<CalculationType, 2> pb {{ boost::geometry::get<0>(p2), boost::geometry::get<1>(p2) }};
         std::array<CalculationType, 2> pc {{ boost::geometry::get<0>(p3), boost::geometry::get<1>(p3) }};
-        std::array<CalculationType, 2> pd {{ boost::geometry::get<0>(p3), boost::geometry::get<1>(p) }};
+        std::array<CalculationType, 2> pd {{ boost::geometry::get<0>(p), boost::geometry::get<1>(p) }};
         CalculationType det = boost::geometry::detail::precise_math::incircle<CalculationType>(pa, pb, pc, pd);
         return det > 0 ? 1
             : det < 0 ? -1
