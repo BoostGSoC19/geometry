@@ -291,7 +291,7 @@ inline RealNumber orient2d(std::array<RealNumber, 2> const& p1,
     t3[1] = two_diff_tail(p1[1], p3[1], t3[0]);
     t4[1] = two_diff_tail(p2[0], p3[0], t4[0]);
 
-    if ((t1[1] == 0.0) && (t3[1] == 0.0) && (t2[1] == 0.0) && (t4[1] == 0.0)) {
+    if ((t1[1] == 0) && (t3[1] == 0) && (t2[1] == 0) && (t4[1] == 0)) {
         return det; //If all tails are zero, there is noething else to compute
     }
     RealNumber sub_bound = (1.5 + 2 * std::numeric_limits<RealNumber>::epsilon())
@@ -327,6 +327,160 @@ inline RealNumber orient2d(std::array<RealNumber, 2> const& p1,
     int D_nz = fast_expansion_sum_zeroelim(D_left, D_right, D, D_left_nz, D_right_nz);
     // only return component of highest magnitude because we mostly care about the sign.
     return(D[D_nz - 1]);
+}
+
+// This method adaptively computes increasingly precise approximations of the following
+// determinant using Laplace expansion along the last column.
+// det A =
+//      | p1_x - p4_x    p1_y - p4_y     ( p1_x - p4_x ) ^ 2 + ( p1_y - p4_y ) ^ 2 |
+//      | p2_x - p4_x    p2_y - p4_y     ( p2_x - p4_x ) ^ 2 + ( p1_y - p4_y ) ^ 2 |
+//      | p3_x - p4_x    p3_y - p4_y     ( p3_x - p4_x ) ^ 2 + ( p3_y - p4_y ) ^ 2 |
+// = a_13 * C_13 + a_23 * C_23 + a_33 * C_33
+// where a_ij is the i-j-entry and M_ij is the i_j Cofactor
+
+template
+<
+    typename RealNumber
+>
+RealNumber incircle(std::array<RealNumber, 2> const& p1, std::array<RealNumber, 2> const& p2, std::array<RealNumber, 2> const& p3, std::array<RealNumber, 2> const& p4)
+{
+    RealNumber A_11 = p1[0] - p4[0];
+    RealNumber A_21 = p2[0] - p4[0];
+    RealNumber A_31 = p3[0] - p4[0];
+    RealNumber A_12 = p1[1] - p4[1];
+    RealNumber A_22 = p2[1] - p4[1];
+    RealNumber A_32 = p3[1] - p4[1];
+
+    std::array<RealNumber, 2> A_21_x_A_32, A_31_x_A_22, A_31_x_A_12, A_11_x_A_32, A_11_x_A_22, A_21_x_A_12;
+    A_21_x_A_32[0] = A_21 * A_32;
+    A_31_x_A_22[0] = A_31 * A_22;
+    RealNumber A_13 = A_11 * A_11 + A_12 * A_12;
+
+    A_31_x_A_12[0] = A_31 * A_12;
+    A_11_x_A_32[0] = A_11 * A_32;
+    RealNumber A_23 = A_21 * A_21 + A_22 * A_22;
+
+    A_11_x_A_22[0] = A_11 * A_22;
+    A_21_x_A_12[0] = A_21 * A_12;
+    RealNumber A_33 = A_31 * A_31 + A_32 * A_32;
+
+    RealNumber det = A_13 * (A_21_x_A_32[0] - A_31_x_A_22[0])
+      + A_23 * (A_31_x_A_12[0] - A_11_x_A_32[0])
+      + A_33 * (A_11_x_A_22[0] - A_21_x_A_12[0]);
+
+    RealNumber magnitude = (std::abs(A_21_x_A_32[0]) + std::abs(A_31_x_A_22[0])) * A_13
+                       + (std::abs(A_31_x_A_12[0]) + std::abs(A_11_x_A_32[0])) * A_23
+                       + (std::abs(A_11_x_A_22[0]) + std::abs(A_21_x_A_12[0])) * A_33;
+    RealNumber A_relative_bound = (5 + 24 * std::numeric_limits<RealNumber>::epsilon())
+        * std::numeric_limits<RealNumber>::epsilon();
+    RealNumber absolute_bound = A_relative_bound * magnitude;
+    if (std::abs(det) > absolute_bound) {
+        return det;
+    }
+
+    A_21_x_A_32[1] = two_product_tail(A_21, A_32, A_21_x_A_32[0]);     // (p2_x - p4_x) * (p3_y - p4_y)
+    A_31_x_A_22[1] = two_product_tail(A_31, A_22, A_31_x_A_22[0]);     // (p3_x - p4_x) * (p2_y - p4_y)
+    std::array<RealNumber, 4> C_13 = two_two_expansion_diff(A_21_x_A_32, A_31_x_A_22); // (bx - dx) * (cy - dy) - (cx - dx) * (by - dy)
+    std::array<RealNumber, 8> C_13_x_A11;
+    int C_13_x_A11_nz = scale_expansion_zeroelim(C_13, A_11, C_13_x_A11); // ( (bx - dx) * (cy - dy) - (cx - dx) * (by - dy) ) * ( ax - dx )
+    std::array<RealNumber, 16> C_13_x_A11_sq;
+    int C_13_x_A11_sq_nz = scale_expansion_zeroelim(C_13_x_A11, A_11, C_13_x_A11_sq, C_13_x_A11_nz);
+    // ( (bx - dx) * (cy - dy) - (cx - dx) * (by - dy) ) * ( ax - dx ) * (ax - dx)
+
+    std::array<RealNumber, 8> C_13_x_A12;
+    int C_13_x_A12_nz = scale_expansion_zeroelim(C_13, A_12, C_13_x_A12);
+    // ( (bx - dx) * (cy - dy) - (cx - dx) * (by - dy) ) * ( ay - dy )
+
+    std::array<RealNumber, 16> C_13_x_A12_sq;
+    int C_13_x_A12_sq_nz = scale_expansion_zeroelim(C_13_x_A12, A_12, C_13_x_A12_sq, C_13_x_A12_nz);
+    // ( (bx - dx) * (cy - dy) - (cx - dx) * (by - dy) ) * ( ay - dy ) * ( ay - dy )
+
+    std::array<RealNumber, 32> A_13_x_C13;
+    int A_13_x_C13_nz = fast_expansion_sum_zeroelim(C_13_x_A11_sq, C_13_x_A12_sq, A_13_x_C13, C_13_x_A11_sq_nz, C_13_x_A12_sq_nz);
+    // ( (bx - dx) * (cy - dy) - (cx - dx) * (by - dy) ) * ( ( ay - dy ) * ( ay - dy ) + ( ax - dx ) * (ax - dx) )
+
+    A_31_x_A_12[1] = two_product_tail(A_31, A_12, A_31_x_A_12[0]);
+    // (cx - dx) * (ay - dy)
+    A_11_x_A_32[1] = two_product_tail(A_11, A_32, A_11_x_A_32[0]);
+    // (ax - dx) * (cy - dy)
+    std::array<RealNumber, 4> C_23 = two_two_expansion_diff(A_31_x_A_12, A_11_x_A_32);
+    // (cx - dx) * (ay - dy) - (ax - dx) * (cy - dy)
+    std::array<RealNumber, 8> C_23_x_A_21;
+    int C_23_x_A_21_nz = scale_expansion_zeroelim(C_23, A_21, C_23_x_A_21);
+    // ( (cx - dx) * (ay - dy) - (ax - dx) * (cy - dy) ) * ( bx - dx )
+    std::array<RealNumber, 16> C_23_x_A_21_sq;
+    int C_23_x_A_21_sq_nz = scale_expansion_zeroelim(C_23_x_A_21, A_21, C_23_x_A_21_sq, C_23_x_A_21_nz);
+    // ( (cx - dx) * (ay - dy) - (ax - dx) * (cy - dy) ) * ( bx - dx ) * ( bx - dx )
+    std::array<RealNumber, 8>  C_23_x_A_22;
+    int C_23_x_A_22_nz = scale_expansion_zeroelim(C_23, A_22, C_23_x_A_22);
+    // ( (cx - dx) * (ay - dy) - (ax - dx) * (cy - dy) ) * ( by - dy )
+    std::array<RealNumber, 16> C_23_x_A_22_sq;
+    int C_23_x_A_22_sq_nz = scale_expansion_zeroelim(C_23_x_A_22, A_22, C_23_x_A_22_sq, C_23_x_A_22_nz);
+    // ( (cx - dx) * (ay - dy) - (ax - dx) * (cy - dy) ) * ( by - dy ) * ( by - dy )
+    std::array<RealNumber, 32> A_23_x_C_23;
+    int A_23_x_C_23_nz = fast_expansion_sum_zeroelim(C_23_x_A_21_sq, C_23_x_A_22_sq, A_23_x_C_23, C_23_x_A_21_sq_nz, C_23_x_A_22_sq_nz);
+    // ( (cx - dx) * (ay - dy) - (ax - dx) * (cy - dy) ) * ( ( bx - dx ) * ( bx - dx ) + ( by - dy ) * ( by - dy ) )
+
+    A_11_x_A_22[1] = two_product_tail(A_11, A_22, A_11_x_A_22[0]);
+    // (ax - dx) * (by - dy)
+    A_21_x_A_12[1] = two_product_tail(A_21, A_12, A_21_x_A_12[0]);
+    // (bx - dx) * (ay - dy)
+    std::array<RealNumber, 4> C_33 = two_two_expansion_diff(A_11_x_A_22, A_21_x_A_12);
+    // (ax - dx) * (by - dy) - (bx - dx) * (ay - dy)
+    std::array<RealNumber, 8>  C_33_x_A31;
+    int C_33_x_A31_nz = scale_expansion_zeroelim(C_33, A_31, C_33_x_A31);
+    // ( (ax - dx) * (by - dy) - (bx - dx) * (ay - dy) ) * ( cx - dx )
+    std::array<RealNumber, 16> C_33_x_A31_sq;
+    int C_33_x_A31_sq_nz = scale_expansion_zeroelim(C_33_x_A31, A_31, C_33_x_A31_sq, C_33_x_A31_nz);
+    // ( (ax - dx) * (by - dy) - (bx - dx) * (ay - dy) ) * ( cx - dx ) * ( cx - dx )
+    std::array<RealNumber, 8>  C_33_x_A_32;
+    int C_33_x_A_32_nz = scale_expansion_zeroelim(C_33, A_32, C_33_x_A_32);
+    // ( (ax - dx) * (by - dy) - (bx - dx) * (ay - dy) ) * ( cy - dy )
+    std::array<RealNumber, 16> C_33_x_A_32_sq;
+    int C_33_x_A_32_sq_nz = scale_expansion_zeroelim(C_33_x_A_32, A_32, C_33_x_A_32_sq, C_33_x_A_32_nz);
+    // ( (ax - dx) * (by - dy) - (bx - dx) * (ay - dy) ) * ( cy - dy ) * ( cy - dy )
+    std::array<RealNumber, 32> A_33_x_C_33;
+    int A_33_x_C_33_nz = fast_expansion_sum_zeroelim(C_33_x_A31_sq, C_33_x_A_32_sq, A_33_x_C_33, C_33_x_A31_sq_nz, C_33_x_A_32_sq_nz);
+    std::array<RealNumber, 64> A_13_x_C13_p_A_13_x_C13;
+    int A_13_x_C13_p_A_13_x_C13_nz = fast_expansion_sum_zeroelim(A_13_x_C13, A_23_x_C_23, A_13_x_C13_p_A_13_x_C13, A_13_x_C13_nz, A_23_x_C_23_nz);
+    std::array<RealNumber, 96> det_expansion;
+    int det_expansion_nz = fast_expansion_sum_zeroelim(A_13_x_C13_p_A_13_x_C13, A_33_x_C_33, det_expansion, A_13_x_C13_p_A_13_x_C13_nz, A_33_x_C_33_nz);
+
+    det = std::accumulate(det_expansion.begin(), det_expansion.begin() + det_expansion_nz, static_cast<RealNumber>(0));
+    RealNumber B_relative_bound = (2 + 12 * std::numeric_limits<RealNumber>::epsilon())
+        * std::numeric_limits<RealNumber>::epsilon();
+    absolute_bound = B_relative_bound * magnitude;
+    if (std::abs(det) >= absolute_bound) {
+        return det;
+    }
+    RealNumber A_11tail = two_diff_tail(p1[0], p4[0], A_11);
+    RealNumber A_12tail = two_diff_tail(p1[1], p4[1], A_12);
+    RealNumber A_21tail = two_diff_tail(p2[0], p4[0], A_21);
+    RealNumber A_22tail = two_diff_tail(p2[1], p4[1], A_22);
+    RealNumber A_31tail = two_diff_tail(p3[0], p4[0], A_31);
+    RealNumber A_32tail = two_diff_tail(p3[1], p4[1], A_32);
+    if ((A_11tail == 0) && (A_21tail == 0) && (A_31tail == 0)
+        && (A_12tail == 0) && (A_22tail == 0) && (A_32tail == 0)) {
+        return det;
+    }
+    //  RealNumber sub_bound =  (1.5 + 2.0 * std::numeric_limits<RealNumber>::epsilon())
+    //    * std::numeric_limits<RealNumber>::epsilon();
+    //  RealNumber C_relative_bound = (11.0 + 72.0 * std::numeric_limits<RealNumber>::epsilon())
+    //    * std::numeric_limits<RealNumber>::epsilon()
+    //    * std::numeric_limits<RealNumber>::epsilon();
+    //absolute_bound = C_relative_bound * magnitude + sub_bound * std::abs(det);
+    det += ((A_11 * A_11 + A_12 * A_12) * ((A_21 * A_32tail + A_32 * A_21tail)
+        - (A_22 * A_31tail + A_31 * A_22tail))
+    + 2 * (A_11 * A_11tail + A_12 * A_12tail) * (A_21 * A_32 - A_22 * A_31))
+    + ((A_21 * A_21 + A_22 * A_22) * ((A_31 * A_12tail + A_12 * A_31tail)
+        - (A_32 * A_11tail + A_11 * A_32tail))
+    + 2 * (A_21 * A_21tail + A_22 * A_22tail) * (A_31 * A_12 - A_32 * A_11))
+    + ((A_31 * A_31 + A_32 * A_32) * ((A_11 * A_22tail + A_22 * A_11tail)
+        - (A_12 * A_21tail + A_21 * A_12tail))
+    + 2 * (A_31 * A_31tail + A_32 * A_32tail) * (A_11 * A_22 - A_12 * A_21));
+    //if (std::abs(det) >= absolute_bound) {
+        return det;
+    //}
 }
 
 }} // namespace detail::precise_math
