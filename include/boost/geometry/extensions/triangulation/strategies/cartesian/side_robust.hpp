@@ -8,7 +8,7 @@ namespace boost { namespace geometry
 namespace strategy { namespace side
 {
 
-template <typename CalculationType = double>
+template <typename CalculationType = double, int robustness = 3>
 struct side_robust
 {
 public:
@@ -18,7 +18,7 @@ public:
         std::array<CalculationType, 2> pa {{ boost::geometry::get<0>(p1), boost::geometry::get<1>(p1) }};
         std::array<CalculationType, 2> pb {{ boost::geometry::get<0>(p2), boost::geometry::get<1>(p2) }};
         std::array<CalculationType, 2> pc {{ boost::geometry::get<0>(p3), boost::geometry::get<1>(p3) }};
-        return boost::geometry::detail::precise_math::orient2d<CalculationType>(pa, pb, pc);
+        return boost::geometry::detail::precise_math::orient2d<CalculationType, robustness>(pa, pb, pc);
     }
 
     template <typename P1, typename P2, typename P3>

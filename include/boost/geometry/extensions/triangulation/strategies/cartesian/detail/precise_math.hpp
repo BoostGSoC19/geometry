@@ -246,7 +246,8 @@ inline int scale_expansion_zeroelim(std::array<RealNumber, InSize> const& e,
 // see page 38, Figure 21 for the calculations, notation follows the notation in the figure.
 template
 <
-    typename RealNumber
+    typename RealNumber,
+    int robustness = 3
 >
 inline RealNumber orient2d(std::array<RealNumber, 2> const& p1,
         std::array<RealNumber, 2> const& p2, std::array<RealNumber, 2> const& p3)
@@ -260,7 +261,7 @@ inline RealNumber orient2d(std::array<RealNumber, 2> const& p1,
     t5_01[0] = t1[0] * t2[0];
     t6_01[0] = t3[0] * t4[0];
     RealNumber det = t5_01[0] - t6_01[0];
-
+    if(robustness == 0) return det;
     if ( (t5_01[0] > 0 && t6_01[0] <= 0) || (t5_01[0] < 0 && t6_01[0] >= 0) ) {
         //if diagonal and antidiagonal have different sign, the sign of det is obvious
         return det;
@@ -279,6 +280,7 @@ inline RealNumber orient2d(std::array<RealNumber, 2> const& p1,
     t6_01[1] = two_product_tail(t3[0], t4[0], t6_01[0]);
     std::array<RealNumber, 4> tA_03 = two_two_expansion_diff(t5_01, t6_01);
     det = std::accumulate(tA_03.begin(), tA_03.end(), static_cast<RealNumber>(0));
+    if(robustness == 1) return det;
     // see p.39, mind the different definition of epsilon for error bound
     RealNumber B_relative_bound = (1 + 3 * std::numeric_limits<RealNumber>::epsilon())
         * std::numeric_limits<RealNumber>::epsilon();
@@ -301,7 +303,7 @@ inline RealNumber orient2d(std::array<RealNumber, 2> const& p1,
         * std::numeric_limits<RealNumber>::epsilon() * std::numeric_limits<RealNumber>::epsilon();
     absolute_bound = C_relative_bound * magnitude + sub_bound * std::abs(det);
     det += (t1[0] * t2[1] + t2[0] * t1[1]) - (t3[0] * t4[1] + t4[0] * t3[1]);
-    if (std::abs(det) >= absolute_bound) {
+    if (robustness == 2 || std::abs(det) >= absolute_bound) {
         return det; //C estimate
     }
     std::array<RealNumber, 8> D_left;
