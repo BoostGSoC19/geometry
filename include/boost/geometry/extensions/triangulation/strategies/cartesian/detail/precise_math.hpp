@@ -252,6 +252,7 @@ template
 inline RealNumber orient2d(std::array<RealNumber, 2> const& p1,
         std::array<RealNumber, 2> const& p2, std::array<RealNumber, 2> const& p3)
 {
+    if(robustness == 0) return (p1[0]-p3[0])*(p2[1]-p3[1]) - (p1[1]-p3[1])*(p2[0] - p3[0]);
     std::array<RealNumber, 2> t1, t2, t3, t4;
     t1[0] = p1[0] - p3[0];
     t2[0] = p2[1] - p3[1];
@@ -261,7 +262,6 @@ inline RealNumber orient2d(std::array<RealNumber, 2> const& p1,
     t5_01[0] = t1[0] * t2[0];
     t6_01[0] = t3[0] * t4[0];
     RealNumber det = t5_01[0] - t6_01[0];
-    if(robustness == 0) return det;
     if ( (t5_01[0] > 0 && t6_01[0] <= 0) || (t5_01[0] < 0 && t6_01[0] >= 0) ) {
         //if diagonal and antidiagonal have different sign, the sign of det is obvious
         return det;
@@ -342,7 +342,8 @@ inline RealNumber orient2d(std::array<RealNumber, 2> const& p1,
 
 template
 <
-    typename RealNumber
+    typename RealNumber,
+    int robustness = 2
 >
 RealNumber incircle(std::array<RealNumber, 2> const& p1, std::array<RealNumber, 2> const& p2, std::array<RealNumber, 2> const& p3, std::array<RealNumber, 2> const& p4)
 {
@@ -369,6 +370,7 @@ RealNumber incircle(std::array<RealNumber, 2> const& p1, std::array<RealNumber, 
     RealNumber det = A_13 * (A_21_x_A_32[0] - A_31_x_A_22[0])
       + A_23 * (A_31_x_A_12[0] - A_11_x_A_32[0])
       + A_33 * (A_11_x_A_22[0] - A_21_x_A_12[0]);
+    if(robustness == 0) return det;
 
     RealNumber magnitude = (std::abs(A_21_x_A_32[0]) + std::abs(A_31_x_A_22[0])) * A_13
                        + (std::abs(A_31_x_A_12[0]) + std::abs(A_11_x_A_32[0])) * A_23
@@ -448,6 +450,7 @@ RealNumber incircle(std::array<RealNumber, 2> const& p1, std::array<RealNumber, 
     int det_expansion_nz = fast_expansion_sum_zeroelim(A_13_x_C13_p_A_13_x_C13, A_33_x_C_33, det_expansion, A_13_x_C13_p_A_13_x_C13_nz, A_33_x_C_33_nz);
 
     det = std::accumulate(det_expansion.begin(), det_expansion.begin() + det_expansion_nz, static_cast<RealNumber>(0));
+    if(robustness == 1) return det;
     RealNumber B_relative_bound = (2 + 12 * std::numeric_limits<RealNumber>::epsilon())
         * std::numeric_limits<RealNumber>::epsilon();
     absolute_bound = B_relative_bound * magnitude;
