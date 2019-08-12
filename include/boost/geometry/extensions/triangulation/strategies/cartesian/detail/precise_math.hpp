@@ -16,8 +16,8 @@
 // and Fast Robust Geometric Predicates" by Richard Shewchuk,
 // J. Discrete Comput Geom (1997) 18: 305. https://doi.org/10.1007/PL00009321
 
-namespace boost { namespace geometry 
-{ 
+namespace boost { namespace geometry
+{
 
 namespace detail { namespace precise_math
 {
@@ -147,7 +147,7 @@ inline std::array<RealNumber, 2> two_product(RealNumber const a,
     return {{ x , y }};
 }
 
-// see theorem 12, figure 7, page 11 - 12, 
+// see theorem 12, figure 7, page 11 - 12,
 // this is the 2 by 2 case for the corresponding diff-method
 // note that this method takes input in descending order of magnitude and
 // returns components in ascending order of magnitude
@@ -456,7 +456,7 @@ RealNumber incircle(std::array<RealNumber, 2> const& p1,
                                                     C_13_x_A12_nz);
 
     std::array<RealNumber, 32> A_13_x_C13;
-    //   ( (bx - dx) * (cy - dy) - (cx - dx) * (by - dy) ) 
+    //   ( (bx - dx) * (cy - dy) - (cx - dx) * (by - dy) )
     // * ( ( ay - dy ) * ( ay - dy ) + ( ax - dx ) * (ax - dx) )
     int A_13_x_C13_nz = fast_expansion_sum_zeroelim(C_13_x_A11_sq,
                                                     C_13_x_A12_sq,

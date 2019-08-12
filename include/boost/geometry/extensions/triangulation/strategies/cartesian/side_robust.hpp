@@ -13,7 +13,7 @@
 #include <boost/geometry/extensions/triangulation/strategies/cartesian/detail/precise_math.hpp>
 
 namespace boost { namespace geometry
-{ 
+{
 
 namespace strategy { namespace side
 {
@@ -26,7 +26,7 @@ template
 struct side_robust
 {
 public:
-    template 
+    template
     <
         typename CoordinateType,
         typename PromotedType,

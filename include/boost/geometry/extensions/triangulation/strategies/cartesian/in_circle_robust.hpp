@@ -11,8 +11,8 @@
 
 #include<boost/geometry/extensions/triangulation/strategies/cartesian/detail/precise_math.hpp>
 
-namespace boost { namespace geometry 
-{ 
+namespace boost { namespace geometry
+{
 
 namespace strategy { namespace in_circle
 {

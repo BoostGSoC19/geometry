@@ -277,7 +277,7 @@ public:
     static halfedge_index next(halfedge_index const& e)
     {
         return halfedge_index{
-            e.m_f, 
+            e.m_f,
             static_cast<unsigned short>(e.m_v == 2 ? 0 : e.m_v + 1) };
     }
 
@@ -394,7 +394,7 @@ public:
             face_vertex_index left_vi = (e.m_v1 == 0 ? 2 : e.m_v1 - 1);
             vertex_iterator left_v = e.m_f1->m_v[ left_vi ];
             face_iterator next_f = left_v->m_f;
-            face_vertex_index next_vi = 
+            face_vertex_index next_vi =
                 (next_f->m_v[ 0 ] == left_v) ? 2 :
                 ((next_f->m_v[ 1 ] == left_v) ? 0 : 1);
             return fulledge_index(invalid(), 4, next_f, next_vi);
@@ -407,7 +407,7 @@ public:
     static fulledge_index begin_vertex_edge(vertex_iterator vi)
     {
         face_iterator first_f = vi -> m_f;
-        face_vertex_index next_vi = 
+        face_vertex_index next_vi =
             (first_f->m_v[ 0 ] == vi) ? 2 :
             ((first_f->m_v[ 1 ] == vi) ? 0 : 1);
         return fulledge_index(invalid(), 4, first_f, next_vi);
@@ -542,6 +542,9 @@ struct coordinate_type< model::vertex_ref<Triangulation> >
     typedef typename coordinate_type<typename Triangulation::point_type>
         ::type type;
 };
+
+template<typename Triangulation>
+struct dimension< model::vertex_ref<Triangulation> > : boost::mpl::int_<2> {};
 
 template<typename Triangulation>
 struct coordinate_system< model::vertex_ref<Triangulation> >

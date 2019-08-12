@@ -18,7 +18,7 @@
 #include <boost/geometry/algorithms/make.hpp>
 #include <boost/geometry/algorithms/comparable_distance.hpp>
 #include <boost/geometry/extensions/triangulation/geometries/triangulation.hpp>
-#include <boost/geometry/extensions/triangulation/strategies/cartesian/in_circle_by_determinant.hpp>
+#include <boost/geometry/extensions/triangulation/strategies/cartesian/in_circle_robust.hpp>
 #include <boost/geometry/strategies/cartesian/side_by_triangle.hpp>
 
 namespace boost { namespace geometry
@@ -35,7 +35,7 @@ template
     typename Point,
     bool ClockWise
 >
-inline Area triangle_area(const Point& p1, const Point& p2, const Point& p3) 
+inline Area triangle_area(const Point& p1, const Point& p2, const Point& p3)
 {
     return !ClockWise ?
          determinant<Area>(
@@ -94,7 +94,7 @@ template<
     typename Triangulation,
     typename SideStrategy,
     typename InCircleStrategy,
-    typename CalculationType = double> // TODO: void CT
+    typename CalculationType = double>
 inline void delaunay_triangulation(PointContainer const & in,
                                    Triangulation& out,
                                    bool legalize)
@@ -103,7 +103,7 @@ inline void delaunay_triangulation(PointContainer const & in,
     typedef typename default_distance_result<point_type, point_type>::type
         distance_type;
     const bool is_cw =
-        boost::geometry::point_order<typename Triangulation::face_type>::value 
+        boost::geometry::point_order<typename Triangulation::face_type>::value
             == clockwise;
     typedef CalculationType ct;
     std::vector<std::tuple<point_type, ct, ct>> points;
@@ -114,13 +114,13 @@ inline void delaunay_triangulation(PointContainer const & in,
     set<1>(zero, 0);
     std::transform(std::begin(in), std::end(in), std::back_inserter(points),
         [&points, &zero](point_type const& p) {
-            return std::tuple<point_type, ct, ct>(p, 
+            return std::tuple<point_type, ct, ct>(p,
             boost::geometry::comparable_distance(p, zero),
             0);
         });
     std::sort(std::begin(points),
               std::end(points),
-              [](std::tuple<point_type, ct, ct> const& p0, 
+              [](std::tuple<point_type, ct, ct> const& p0,
                  std::tuple<point_type, ct, ct> const& p1)
               { return std::get<1>(p0) < std::get<1>(p1); });
     for(std::tuple<point_type, ct, ct>& p : points)
@@ -159,7 +159,7 @@ inline void delaunay_triangulation(PointContainer const & in,
           && SideStrategy::apply(std::get<0>(points[ 0 ]),
                                  std::get<0>(points[ 1 ]),
                                  std::get<0>(points[ 2 ])) < 0 )
-        || ( is_cw 
+        || ( is_cw
           && SideStrategy::apply(std::get<0>(points[ 0 ]),
                                  std::get<0>(points[ 1 ]),
                                  std::get<0>(points[ 2 ])) > 0 ))
@@ -168,22 +168,22 @@ inline void delaunay_triangulation(PointContainer const & in,
     }
     const double PI = 3.14159265358979323846;
     //Step 6
-    
+
     typedef typename Triangulation::vertex_iterator vertex_iterator;
     typedef typename Triangulation::face_iterator face_iterator;
-    vertex_iterator const p1 = out.add_vertex(std::get<0>(points[ 0 ]));                             
+    vertex_iterator const p1 = out.add_vertex(std::get<0>(points[ 0 ]));
     vertex_iterator const p2 = out.add_vertex(std::get<0>(points[ 1 ]));
     vertex_iterator const p3 = out.add_vertex(std::get<0>(points[ 2 ]));
     face_iterator const seed_face = out.add_isolated_face(p1, p2, p3);
     point_type cen;
-    set<0>(cen, 
-        ( get<0>(std::get<0>(points[ 0 ])) 
-        + get<0>(std::get<0>(points[ 1 ])) 
-        + get<0>(std::get<0>(points[ 2 ])) ) / 3);
-    set<1>(cen, 
-        ( get<1>(std::get<0>(points[ 0 ])) 
-        + get<1>(std::get<0>(points[ 1 ])) 
-        + get<1>(std::get<0>(points[ 2 ])) ) / 3);
+    set<0>(cen,
+           ( get<0>(std::get<0>(points[ 0 ]))
+           + get<0>(std::get<0>(points[ 1 ]))
+           + get<0>(std::get<0>(points[ 2 ])) ) / 3);
+    set<1>(cen,
+          ( get<1>(std::get<0>(points[ 0 ]))
+          + get<1>(std::get<0>(points[ 1 ]))
+          + get<1>(std::get<0>(points[ 2 ])) ) / 3);
 
     point_type C = circumcircle_center<point_type, is_cw>(
         std::get<0>(points[ 0 ]),
@@ -191,12 +191,12 @@ inline void delaunay_triangulation(PointContainer const & in,
         std::get<0>(points[ 2 ]));
     {
         std::for_each(std::begin(points), std::end(points),
-            [&C, &cen, &PI](std::tuple<point_type, ct, ct>& p){ 
+            [&C, &cen, &PI](std::tuple<point_type, ct, ct>& p){
                 std::get<1>(p) = comparable_distance(std::get<0>(p), C);
-                std::get<2>(p) = 
-                    ! is_cw ? 
-                         std::atan2( 
-                            get<1>(std::get<0>(p)) - get<1>(cen), 
+                std::get<2>(p) =
+                    ! is_cw ?
+                         std::atan2(
+                            get<1>(std::get<0>(p)) - get<1>(cen),
                             get<0>(std::get<0>(p)) - get<0>(cen)) + PI
                         : 2 * PI - (std::atan2(
                             get<1>(std::get<0>(p)) - get<1>(cen),
@@ -204,7 +204,7 @@ inline void delaunay_triangulation(PointContainer const & in,
             });
         std::sort(std::begin(points) + 3,
                   std::end(points),
-                  [](std::tuple<point_type, ct, ct> const& p0, 
+                  [](std::tuple<point_type, ct, ct> const& p0,
                      std::tuple<point_type, ct, ct> const& p1)
                   { return std::get<1>(p0) < std::get<1>(p1); });
     }
@@ -271,7 +271,7 @@ inline void delaunay_triangulation(PointContainer const & in,
                 convex_hull.begin(), convex_hull.end(),
                 opposite, pred);
             if( invis_edge == convex_hull.begin() )
-                invis_edge = convex_hull.end() - 1; 
+                invis_edge = convex_hull.end() - 1;
             else --invis_edge;
             if(!is_visible(*vis_edge)) {
                 invis_edge = vis_edge;
@@ -284,7 +284,7 @@ inline void delaunay_triangulation(PointContainer const & in,
                     }
                 }
             }
-            auto vis_small = [&is_visible] 
+            auto vis_small = [&is_visible]
                 (convex_hull_edge const& be, int const&)
                 {
                     if(is_visible(be)) return true;
@@ -294,7 +294,7 @@ inline void delaunay_triangulation(PointContainer const & in,
                 (convex_hull_edge const& be, int const&)
                 {
                     if(is_visible(be)) return false;
-                    else return true; 
+                    else return true;
                 };
             convex_hull_iterator first_visible, last_visible,
                 fv2 = convex_hull.end();
@@ -350,7 +350,7 @@ inline void delaunay_triangulation(PointContainer const & in,
                 }
                 convex_hull.erase(fv2, std::end(convex_hull));
             }
-            const face_iterator fnf = 
+            const face_iterator fnf =
                 out.add_face_on_boundary(std::get<0>(*first_visible),
                                          new_vertex);
             if(looped) {
@@ -391,7 +391,7 @@ inline void delaunay_triangulation(PointContainer const & in,
         for(face_iterator i = out.faces_begin(); i != out.faces_end(); ++i)
         {
             for(face_vertex_index j = 0; j<2 ; ++j)
-                if(   out.neighbour(i, j)!=Triangulation::invalid() 
+                if(   out.neighbour(i, j)!=Triangulation::invalid()
                    && &(*i) > &(*out.neighbour(i, j))) {
                     L.push_back(halfedge_index(i,j));
                 }
@@ -438,7 +438,7 @@ template<
     typename PointContainer,
     typename Triangulation,
     typename SideStrategy = strategy::side::side_by_triangle<>,
-    typename InCircleStrategy = strategy::in_circle::fast_in_circle<>>
+    typename InCircleStrategy = strategy::in_circle::in_circle_robust<>>
 inline void delaunay_triangulation(PointContainer const & in,
                                    Triangulation& out,
                                    bool legalize = true)

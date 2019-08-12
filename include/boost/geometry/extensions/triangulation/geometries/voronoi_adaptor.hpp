@@ -47,7 +47,7 @@ template
     typename Triangulation
 >
 class voronoi_face_view {
-public:    
+public:
     typedef typename Triangulation::point_type point_type;
     typedef typename Triangulation::vertex_iterator vertex_iterator;
     typedef typename Triangulation::face_iterator face_iterator;
@@ -100,7 +100,7 @@ struct coordinate_system< model::voronoi_vertex_view<Triangulation> >
 { typedef typename coordinate_system<typename Triangulation::point_type>::type type; };
 
 template<typename Triangulation, std::size_t Dimension>
-struct access<model::voronoi_vertex_view<Triangulation>, Dimension> 
+struct access<model::voronoi_vertex_view<Triangulation>, Dimension>
 {
     static typename coordinate_type<typename Triangulation::point_type>::type
         get(model::voronoi_vertex_view<Triangulation> const& p)
