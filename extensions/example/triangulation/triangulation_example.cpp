@@ -14,7 +14,6 @@
 #include <vector>
 
 #include <boost/geometry.hpp>
-#include <boost/geometry/extensions/random/uniform_point_distribution.hpp>
 #include <boost/geometry/extensions/triangulation/triangulation.hpp>
 #include <boost/geometry/extensions/triangulation/geometries/voronoi_adaptor.hpp>
 
