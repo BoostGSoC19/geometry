@@ -1,3 +1,11 @@
+// Boost.Geometry (aka GGL, Generic Geometry Library)
+
+// Copyright (c) 2019 Tinko Bartels, Berlin, Germany.
+
+// Use, modification and distribution is subject to the Boost Software License,
+// Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt)
+
 #ifndef BOOST_GEOMETRY_EXTENSIONS_TRIANGULATION_GEOMETRIES_TRIANGULATION_HPP
 #define BOOST_GEOMETRY_EXTENSIONS_TRIANGULATION_GEOMETRIES_TRIANGULATION_HPP
 
@@ -113,7 +121,7 @@ public:
     typedef typename coordinate_type<Point>::type coordinate_type;
     typedef typename model::segment<Point> segment_type;
 
-    static const order_selector point_order = 
+    static const order_selector point_order =
         ClockWise ? clockwise : counterclockwise;
     struct halfedge_index
     {
@@ -140,30 +148,6 @@ public:
         face_iterator m_f1, m_f2;
         face_vertex_index m_v1, m_v2;
     };
-
-/*    void debug_print()
-    {
-        std::cout << "Vertices: \n";
-        for(std::size_t i = 0; i < m_vertices.size(); ++i)
-            std::cout << "Vertex " << i << ": ( " << get<0>(m_vertices[i].m_p) << " , " << get<1>(m_vertices[i].m_p) 
-            << "), touches face: " << m_vertices[i].m_f << "\n";
-        std::cout << "Faces: \n";
-        for(std::size_t i = 0; i < m_faces.size(); ++i) {
-            debug_print_face(i);
-        }
-        std::cout << "boundary vertex: " 
-            << std::distance<const_face_iterator>(m_vertices.begin(), m_boundary_vertex) << "\n";
-    }
-
-    void debug_print_face(std::size_t i) {
-            const face_ref& f = m_faces[i];
-            std::cout << "Face " << i << ":\n";
-            for(unsigned short v = 0; v < 3; ++v)
-                std::cout << "Vertex " << v << ": " 
-                    << std::distance<const_vertex_iterator>(m_vertices.begin(), f.m_v[v])
-                    << ", Neighbour: " << std::distance<const_face_iterator>(m_faces.begin(), f.m_f[v]) 
-                    << ", Opposite: " << f.m_o[v] << "\n";
-    }*/
 
     static face_iterator invalid() { return face_iterator(); }
     triangulation(std::size_t points = 3)
@@ -466,35 +450,6 @@ public:
         }
     }
 
-/*
-    void remove_face(face_index fi)
-    {
-        auto& f = m_faces[fi];
-        if(m_faces.size() > 1)
-            while(m_vertices[m_boundary_vertex].m_f == fi)
-                m_boundary_vertex = boundary_next(m_boundary_vertex);
-        for(face_vertex_index i = 0; i < 3 ; ++i)
-            if(m_vertices[f.m_v[i]].m_f == fi)
-                if(f.m_f[i == 0 ? 2 : i-1 ] != invalid)
-                    m_vertices[f.m_v[i]].m_f = f.m_f[i == 0 ? 2 : i-1 ];
-                else if (f.m_f[i == 2 ? 0 : i+1 ] != invalid)
-                    m_vertices[f.m_v[i]].m_f = f.m_f[i == 2 ? 0 : i+1 ];
-                else
-                    m_vertices[f.m_v[i]].m_f = invalid;
-        for(face_vertex_index i=0; i<3; ++i)
-            m_faces[f.m_f[i]].m_f[f.m_o[i]] = invalid;
-        for(face_vertex_index i=0; i<3; ++i)
-            m_faces[f.m_f[i]].m_o[f.m_o[i]] = 4;
-        for(face_index i = 0; i < m_faces.size(); ++i)
-            for(face_vertex_index j = 0; j<3; ++j)
-                if(m_faces[i].m_f[j] > fi && m_faces[i].m_f[j] != invalid)
-                    m_faces[i].m_f[j]--;
-        for(vertex_index i = 0; i < m_vertices.size(); ++i)
-            if(m_vertices[i].m_f > fi && m_vertices[i].m_f != invalid)
-                m_vertices[i].m_f--;
-        m_faces.erase(m_faces.begin()+fi);
-    }*/
-
     bool valid() const
     {
         bool valid = true;
@@ -530,13 +485,7 @@ public:
                     }
 
                 }
-            }/*
-            valid = valid && 
-                (strategy::side::side_by_triangle<>
-                    ::apply(f.m_v[0]->m_p, f.m_v[1]->m_p, f.m_v[2]->m_p) > 0);
-            if(!valid) {
-                return false;
-            }*/
+            }
         }
         for(const_vertex_iterator vi = m_vertices.cbegin();
             vi != m_vertices.cend();
@@ -579,37 +528,9 @@ using triangulation_vertex_range =
 
 } // namespace model
 
-/*
-template<typename Point>
-struct triangulation_face<model::triangulation<Point>>
-{
-    typename model::triangulation<Point>::face_type const& 
-        get(model::triangulation<Point> const& t, typename model::triangulation<Point>::face_index const& fi)
-    {
-        return t.face(fi);
-    }
-};*/
-
-struct triangulation_tag {};
-
 #ifndef DOXYGEN_NO_TRAITS_SPECIALIZATIONS
 namespace traits
 {
-
-template <typename Point>
-struct tag< model::triangulation<Point> >
-{
-    typedef triangulation_tag type;
-};
-
-template <typename Point>
-struct point_type< model::triangulation<Point> >
-{
-    typedef typename model::triangulation<Point>::point_type type;
-};
-
-template<typename Triangulation>
-struct dimension< model::vertex_ref<Triangulation> > : boost::mpl::int_<2> {};
 
 template<typename Triangulation>
 struct tag< model::vertex_ref<Triangulation> >
