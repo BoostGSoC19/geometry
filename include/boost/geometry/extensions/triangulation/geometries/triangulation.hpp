@@ -22,8 +22,6 @@
 #include <boost/geometry/algorithms/assign.hpp>
 #include <boost/geometry/geometries/concepts/point_concept.hpp>
 
-#include <boost/geometry/extensions/triangle/triangle.hpp>
-
 namespace boost { namespace geometry
 {
 template<typename Triangulation>

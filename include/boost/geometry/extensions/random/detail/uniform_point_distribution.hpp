@@ -123,7 +123,7 @@ class uniform_point_distribution
 public:
     using base::base;
     template<typename Generator>
-    Point operator()(Generator& gen, typename base::param_type const& p) 
+    Point operator()(Generator& gen, typename base::param_type const& p)
     {
         std::size_t count = num_points(p.domain());
         std::uniform_int_distribution<std::size_t> dis(0, count-1);
@@ -330,7 +330,7 @@ template
     typename LengthType
 >
 struct sample_segment;
-    
+
 template
 <
     typename Point,
