@@ -50,10 +50,8 @@ template<typename Point, typename CalculationType, typename SideStrategy>
 inline CalculationType comparable_circumcircle_diameter(
     const Point& p1, const Point& p2, const Point& p3)
 {
-    typedef typename default_comparable_distance_result<Point, Point>::type
-        dfcr;
     typedef typename coordinate_type<Point>::type coordinate_type;
-    CalculationType comp_area =SideStrategy::template
+    CalculationType comp_area = SideStrategy::template
         side_value<coordinate_type, CalculationType>(p1, p2, p3);
     return comparable_distance(p1, p2)
          * comparable_distance(p1, p3)
@@ -224,7 +222,7 @@ inline void delaunay_triangulation(PointContainer const & in,
             std::make_pair(e1, ct(std::get<2>(points[1]))),
             std::make_pair(e2, ct(std::get<2>(points[2]))),
             std::make_pair(e3, ct(std::get<2>(points[0]))) };
-        for(int i=3; i<points.size(); ++i)
+        for (std::size_t i = 3; i < points.size(); ++i)
         {
             vertex_iterator new_vertex =
                 out.add_vertex(std::get<0>(points[ i ]));
@@ -245,15 +243,6 @@ inline void delaunay_triangulation(PointContainer const & in,
             ct opposite = angle - PI;
             if(opposite < 0) opposite += 2 * PI;
 
-            for(int i=0; i < convex_hull.size() ; ++i) {
-                ct ba = std::get<1>(convex_hull[ i ]);
-                out_point_type p =
-                    out.face_segment(std::get<0>(convex_hull[ i ])).first;
-            }
-            for(int i=0; i < convex_hull.size() ; ++i) {
-                ct ba = std::get<1>(convex_hull[ i ]) - ref_angle;
-                if(ba < 0) ba += 2 * PI;
-            }
             auto pred = [&ref_angle, &PI]
                 (convex_hull_edge const& be, ct const& a)
                 {

@@ -674,7 +674,6 @@ inline void face_adjacent_range(
     typedef typename model::triangulation<Point, ClockWise, VertexContainer,
         FaceContainer, VertexAllocator, FaceAllocator > triangulation;
     typedef typename triangulation::face_iterator face_iterator;
-    typedef typename triangulation::face_type face_type;
     face_iterator const invalid = t.invalid();
     if(fi -> m_f[ 0 ] != invalid ) *out++ = fi->m_f[ 0 ];
     if(fi -> m_f[ 1 ] != invalid ) *out++ = fi->m_f[ 1 ];
@@ -704,7 +703,6 @@ inline void face_incident_faces(
     typedef typename triangulation::vertex_iterator vertex_iterator;
     typedef typename triangulation::face_vertex_index face_vertex_index;
     typedef typename triangulation::face_type face_type;
-    typedef typename triangulation::const_face_iterator const_face_iterator;
     face_iterator const invalid = t.invalid();
     for(face_vertex_index i = 0; i < 3; ++i)
     {
@@ -796,7 +794,6 @@ inline void vertex_incident_vertices(
     typedef model::triangulation<Point, ClockWise, VertexContainer,
         FaceContainer, VertexAllocator, FaceAllocator> triangulation_type;
     typedef typename triangulation_type::face_iterator face_iterator;
-    typedef typename triangulation_type::vertex_iterator vertex_iterator;
     typedef typename triangulation_type::fulledge_index fulledge_index;
     fulledge_index e = t.begin_vertex_edge(vi);
     face_iterator first_face = e.m_f2;
