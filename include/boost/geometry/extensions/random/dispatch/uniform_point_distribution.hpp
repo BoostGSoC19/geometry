@@ -19,37 +19,52 @@
 namespace boost { namespace geometry { namespace random { namespace dispatch
 {
 
-    template<typename DomainGeometry, typename Point, typename DomainTag = typename tag_cast
-            <
-                typename tag<DomainGeometry>::type,
-                segment_tag,
-                box_tag,
-                linear_tag,
-                areal_tag,
-                pointlike_tag
-            >::type,
-        typename MultiOrSingle = typename tag_cast
-            <
-                typename tag<DomainGeometry>::type,
-                single_tag,
-                multi_tag
-            >::type,
-        typename CSTag = typename tag_cast
-            <
-                typename cs_tag<Point>::type,
-                spherical_tag
-            >::type,
-        std::size_t dimension = dimension<Point>::type::value>
-    class uniform_point_distribution : public detail::uniform_point_distribution<Point, DomainGeometry, DomainTag,
-        MultiOrSingle,
-        CSTag,
-        dimension
-    >
-    {
-    public:
-        typedef detail::uniform_point_distribution<Point, DomainGeometry, DomainTag, MultiOrSingle, CSTag, dimension> base;
-        using base::base;
-    };
+template
+<
+    typename DomainGeometry,
+    typename Point,
+    typename DomainTag = typename tag_cast
+        <
+            typename tag<DomainGeometry>::type,
+            segment_tag,
+            box_tag,
+            linear_tag,
+            areal_tag,
+            pointlike_tag
+        >::type,
+    typename MultiOrSingle = typename tag_cast
+        <
+            typename tag<DomainGeometry>::type,
+            single_tag,
+            multi_tag
+        >::type,
+    typename CSTag = typename tag_cast
+        <
+            typename cs_tag<Point>::type,
+            spherical_tag
+        >::type,
+    std::size_t dimension = dimension<Point>::type::value
+>
+class uniform_point_distribution : public detail::uniform_point_distribution
+        <
+            Point, DomainGeometry, DomainTag,
+            MultiOrSingle,
+            CSTag,
+            dimension
+        >
+{
+public:
+    typedef detail::uniform_point_distribution
+        <
+            Point,
+            DomainGeometry,
+            DomainTag,
+            MultiOrSingle,
+            CSTag,
+            dimension
+        > base;
+    using base::base;
+};
 
 }}}} // namespace boost::geometry::random::dispatch
 
