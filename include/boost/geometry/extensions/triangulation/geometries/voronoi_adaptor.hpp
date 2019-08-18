@@ -27,7 +27,7 @@ public:
     typedef typename Triangulation::point_type point_type;
     typedef typename Triangulation::face_iterator face_iterator;
     voronoi_vertex_view(face_iterator f):
-        m_p(boost::geometry::detail::delaunay_triangulation::circumcircle_center
+        m_p(strategy::delaunay_triangulation::detail::circumcircle_center
             <
                 point_type,
                 boost::geometry::point_order<typename Triangulation::face_type>::value == clockwise
